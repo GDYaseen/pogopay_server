@@ -13,23 +13,23 @@ const port = 3000
 app.use(cors({ origin: "http://localhost:5173" }))
 
 // https configuration
-const privateKey = fs.readFileSync("localhost-key.pem", "utf8")
-const certificate = fs.readFileSync("localhost.pem", "utf8")
+// const privateKey = fs.readFileSync("localhost-key.pem", "utf8")
+// const certificate = fs.readFileSync("localhost.pem", "utf8")
 
-const passphrase = "gaurav"
-const credentials = { key: privateKey, passphrase, cert: certificate }
+// const passphrase = "gaurav"
+// const credentials = { key: privateKey, passphrase, cert: certificate }
 
-function ensureSecure(req, res, next) {
-  if (req.secure) {
+// function ensureSecure(req, res, next) {
+  // if (req.secure) {
     // Request is already secure (HTTPS)
-    return next()
-  }
+    // return next()
+  // }
   // Redirect to HTTPS version of the URL
-  res.redirect("https://" + req.hostname + req.originalUrl)
-}
+  // res.redirect("https://" + req.hostname + req.originalUrl)
+// }
 
 // Use the middleware to enforce HTTPS
-app.use(ensureSecure)
+// app.use(ensureSecure)
 
 app.use(json())
 app.use("/auth", AuthRouter)
@@ -44,7 +44,7 @@ app.get("/", async (req, res) => {
   res.send("hi")
 })
 
-const httpsServer = https.createServer(credentials, app)
-httpsServer.listen(port, () => {
+// const httpsServer = https.createServer(credentials, app)
+app.listen(port, () => {
   console.log(`HTTP server running on port ${port}`)
 })
