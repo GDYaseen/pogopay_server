@@ -7,7 +7,7 @@ import { config } from "dotenv"
 config()
 
 router.all("/json",(req,res)=>{
-    res.send(JSON.stringify({hello:"hello this is a json",yep:"and this is another value"}))
+    res.json({hello:"hello this is a json",yep:"and this is another value"})
 })
 
 router.all("/add-card",async (req,res)=>{
