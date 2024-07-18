@@ -6,8 +6,8 @@ import { config } from "dotenv"
 
 config()
 
-router.all("/json",(req,res)=>{
-    res.json({hello:"hello this is a json",yep:"and this is another value"})
+router.post("/json",(req,res)=>{
+    res.json(req.body)
 })
 
 router.all("/add-card",async (req,res)=>{
