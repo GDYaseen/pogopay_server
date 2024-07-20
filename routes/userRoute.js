@@ -11,7 +11,7 @@ router.get("/", authenticateToken, async (req, res) => {
   try {
     const user = await Utilisateur.findById(id).select([
       "-password",
-      "-carteBancaire",
+      "-cards",
     ])
     if (!user) {
       return res
@@ -114,11 +114,11 @@ router.post("/addCarte",authenticateToken,carteValidator,
         isdefault,
       }
 
-      const carteNumber = utilisateur.carteBancaire.length
+      const carteNumber = utilisateur.cards.length
       if (carteNumber == 0) {
         newCard.isdefault = true
       } else if (isdefault == "true") {
-        const defaultCard = utilisateur.carteBancaire.find(
+        const defaultCard = utilisateur.cards.find(
           (carte) => carte.isdefault
         )
         if (defaultCard) {
@@ -126,8 +126,8 @@ router.post("/addCarte",authenticateToken,carteValidator,
         }
       }
 
-      // Add the new card to the user's carteBancaire array
-      utilisateur.carteBancaire.push(newCard)
+      // Add the new card to the user's cards array
+      utilisateur.cards.push(newCard)
 
       // Save the updated user
       await utilisateur.save()
@@ -155,21 +155,21 @@ router.get("/defaultCarte", authenticateToken, async (req, res) => {
     }
 
     // Find the user by ID
-    const utilisateur = await Utilisateur.findById(id).select("carteBancaire")
+    const utilisateur = await Utilisateur.findById(id).select("cards")
     if (!utilisateur) {
       return res
         .status(404)
         .json({ message: "Utilisateur non trouvé", status: "error" })
     }
 
-    const carteNumber = utilisateur.carteBancaire.length
+    const carteNumber = utilisateur.cards.length
     if (carteNumber == 0) {
       return res
         .status(404)
         .json({ message: "ajouter une carte bancaire", status: "error" })
     }
 
-    const defaultCard = utilisateur.carteBancaire.find(
+    const defaultCard = utilisateur.cards.find(
       (carte) => carte.isdefault
     )
     if (!defaultCard) {
@@ -201,14 +201,14 @@ router.delete(
       }
 
       // Find the user by ID
-      const utilisateur = await Utilisateur.findById(id).select("carteBancaire")
+      const utilisateur = await Utilisateur.findById(id).select("cards")
       if (!utilisateur) {
         return res
           .status(404)
           .json({ message: "Utilisateur non trouvé", status: "error" })
       }
 
-      const carte = utilisateur.carteBancaire.id(carteID)
+      const carte = utilisateur.cards.id(carteID)
       if (!carte) {
         return res
           .status(404)
@@ -219,9 +219,9 @@ router.delete(
       carte.deleteOne()
 
       // change default carte to the fisrt carte
-      const carteNumber = utilisateur.carteBancaire.length
+      const carteNumber = utilisateur.cards.length
       if (carteNumber != 0) {
-        utilisateur.carteBancaire[0].isdefault = true
+        utilisateur.cards[0].isdefault = true
       }
       await utilisateur.save()
 
@@ -252,21 +252,21 @@ router.post(
           .json({ message: "Validation failed", errors: errors.array() })
       }
 
-      const utilisateur = await Utilisateur.findById(id).select("carteBancaire")
+      const utilisateur = await Utilisateur.findById(id).select("cards")
       if (!utilisateur) {
         return res
           .status(404)
           .json({ message: "Utilisateur non trouvé", status: "error" })
       }
 
-      const carte = utilisateur.carteBancaire.id(carteID)
+      const carte = utilisateur.cards.id(carteID)
       if (!carte) {
         return res
           .status(404)
           .json({ message: "Carte non trouvé", status: "error" })
       }
 
-      const defaultCard = utilisateur.carteBancaire.find(
+      const defaultCard = utilisateur.cards.find(
         (carte) => carte.isdefault
       )
       if (!defaultCard) {
@@ -292,7 +292,7 @@ router.post(
 router.post("/allCarte", authenticateToken, async (req, res) => {
   try {
     const { id } = req.user
-    const utilisateur = await Utilisateur.findById(id).select("carteBancaire")
+    const utilisateur = await Utilisateur.findById(id).select("cards")
     if (!utilisateur) {
       return res
         .status(404)
@@ -301,7 +301,7 @@ router.post("/allCarte", authenticateToken, async (req, res) => {
 
     res
       .status(201)
-      .json({ cartes: utilisateur.carteBancaire, status: "success" })
+      .json({ cartes: utilisateur.cards, status: "success" })
   } catch (error) {
     console.error(error.message)
     res.status(500).json({ message: error.message, status: "error" })
@@ -316,7 +316,7 @@ router.post("/getUserCarte", authenticateToken, async (req, res) => {
     return res.status(404).json({ message: "Utilisateur non trouvé" })
   }
 
-  const carte = user.carteBancaire.id(id_carte)
+  const carte = user.cards.id(id_carte)
   if (!carte) {
     return res.status(404).json({ message: "Carte non trouvée" })
   }

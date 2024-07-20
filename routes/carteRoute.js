@@ -3,78 +3,28 @@ import { Router } from "express"
 import crypto from "crypto"
 const router = Router()
 import { config } from "dotenv"
+import Utilisateur from "../models/utilisateur.js"
+import { read } from "fs"
 
 config()
 
-router.post("/json",(req,res)=>{
-    res.json(req.body)
-})
-
-router.all("/add-card",async (req,res)=>{
-    const postData = {
-        clientid: process.env.CLIENTID,
-        amount: "1.00",
-        okUrl: process.env.OKURL,
-        failUrl: process.env.FAILURL,
-        TranType: "PreAuth",
-        callbackUrl: process.env.CALLBACKURL,
-        currency: "504",
-        rnd: getMicrosecondsSinceEpoch(),
-        storetype: "3DPAYHOSTING",
-        hashAlgorithm: "ver3",
-        lang: "fr",
-        encoding: "UTF-8",
-        MERCHANTSAFE: "MERCHANTSAFE",
-        MERCHANTSAFEKEY: "TOKEN123456", //rib
-        MERCHANTSAFEAUTHTYPE: "3DPAYAUTH",
-        // MERCHANTSAFEACQUIRER: process.env.MERCHANTSAFEACQUIRER,
-        MERCHANTGROUPID: process.env.MERCHANTGROUPID
-      };
-    
-    const storeKey = process.env.STOREKEY; // Set by the merchant or delivered by the CMI Integration team
-    const hash = createHashFromPostData(postData, storeKey);
-    postData.HASH = hash;
-
-    let formHtml = '<html><head><title>Redirecting...</title></head><body onload="document.forms[0].submit()">';
-    formHtml += '<form method="post" action="https://testpayment.cmi.co.ma/fim/est3Dgate">';
-
-    for (const [key, value] of Object.entries(postData)) {
-        formHtml += `<input type="hidden" name="${key}" value="${value}" />\n`;
-    }
-
-    formHtml += '</form></body></html>';
-    
-    res.send(formHtml);
-})
-
-
-function createHashFromPostData(postData, storeKey) {
-    const postParams = Object.keys(postData).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    
-    let hashval = '';
-    postParams.forEach(param => {
-        const paramValue = postData[param].trim();
-        const escapedParamValue = paramValue.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
-        
-        const lowerParam = param.toLowerCase();
-        if (lowerParam !== 'hash' && lowerParam !== 'encoding') {
-            hashval += escapedParamValue + '|';
+router.post("/add-card", async (req,res)=>{
+    console.log("addcard")
+    if(req.body.ProcReturnCode=="99") {//99 if its an error, 00 if its ok
+        let u = await Utilisateur.findOne({safeToken:req.body.MERCHANTSAFEKEY});
+        //console.log(u)
+        try{
+            u.cards.push({maskedCard:req.body.maskedCreditCard,cardLabel:req.body.MERCHANTSAFELABEL})
+            await u.save()
+        }catch(e){
+            res.status(500).json({message:e,status:'error'})
+            console.log(e)
+            return
         }
-        // console.log(lowerParam,":",escapedParamValue)
-    });
-
-    const escapedStoreKey = storeKey.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
-    hashval += escapedStoreKey;
-
-    const calculatedHashValue = crypto.createHash('sha512').update(hashval, 'utf8').digest('hex');
-    const hash = Buffer.from(calculatedHashValue, 'hex').toString('base64');
-    
-    return hash;
-}
-
-function getMicrosecondsSinceEpoch() {
-    const now = new Date();
-    return (now.getTime() * 1000 + now.getMilliseconds() * 1000).toString();
-  }
+        res.json(u)
+        return
+    }
+    res.status(500).json({message:"CMI error",status:'error'})
+})
 
 export default router

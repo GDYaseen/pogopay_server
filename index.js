@@ -6,6 +6,7 @@ import AuthRouter from "./routes/authRoute.js"
 import UserRouter from "./routes/userRoute.js"
 import PaimentRouter from "./routes/paimentRoute.js"
 import CarteRouter from "./routes/carteRoute.js"
+import CMIRouter from "./routes/cmiRoute.js"
 import cors from "cors"
 
 const app = express()
@@ -14,11 +15,10 @@ const port = 3000
 app.use(cors({ origin: "*" }))
 
 // https configuration
-// const privateKey = fs.readFileSync("localhost-key.pem", "utf8")
-// const certificate = fs.readFileSync("localhost.pem", "utf8")
+//  const privateKey = fs.readFileSync("localhost.decrypted.key")
+//  const certificate = fs.readFileSync("localhost.crt")
 
-// const passphrase = "gaurav"
-// const credentials = { key: privateKey, passphrase, cert: certificate }
+// const credentials = { key: privateKey,cert: certificate }
 
 // function ensureSecure(req, res, next) {
   // if (req.secure) {
@@ -37,6 +37,7 @@ app.use("/auth", AuthRouter)
 app.use("/user", UserRouter)
 app.use("/paiment", PaimentRouter)
 app.use("/carte", CarteRouter)
+app.use("/cmi", CMIRouter)
 
 dbConnect()
 .then(() => console.log("MongoDB connected"))
@@ -48,5 +49,6 @@ app.get("/", async (req, res) => {
 
 // const httpsServer = https.createServer(credentials, app)
 app.listen(port, () => {
-  console.log(`HTTP server running on port ${port}`)
+// httpsServer.listen(port, () => {
+  console.log(`HTTPS server running on port ${port}`)
 })

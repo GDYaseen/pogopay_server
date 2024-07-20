@@ -1,10 +1,8 @@
 import { model, Schema } from "mongoose"
 
 const cartebancaireSchema = new Schema({
-  nomProprietaire: { type: String, required: true },
-  numCarte: { type: Number, required: true, unique: true, sparse: true },
-  cvv: { type: String, required: true },
-  dateExperation: { type: Date, required: true },
+  maskedCard: { type: String, required: true, unique: true, sparse: true },
+  cardLabel: { type: String, required:true},
   isdefault: { type: Boolean, default: false },
 
 },{timestamps:true})
@@ -15,7 +13,12 @@ const utilisateurSchema = new Schema({
   prenom: { type: String, required: true },
   telephone: { type: Number, required: true, unique: true },
   password: { type: String, required: true },
-  carteBancaire: { type: [cartebancaireSchema], default: [] },
+  safeToken:{//rib
+      type:String,
+      required:true,
+      unique:true
+  },
+  cards: { type: [cartebancaireSchema], default: [] },
   
 },{timestamps:true})
 

@@ -27,7 +27,7 @@ router.post("/login", loginValidator, async (req, res) => {
   try {
     const { login, password } = req.body
     const user = await Utilisateur.findOne({ telephone: login }).select(
-      "-carteBancaire"
+      "-cards"
     )
     if (!user) {
       return res.status(400).send({ message: "User not found", status: "error" })
@@ -82,13 +82,14 @@ const registreValidator = [
 
 router.post("/registre", registreValidator, async (req, res) => {
   try {
-    const { nom, prenom, telephone, password } = req.body
+    const { nom, prenom, telephone, password, rib} = req.body
     const cryptedPassword = await bcrypt.hash(password, 10)
     const user = new Utilisateur({
       nom,
       prenom,
       telephone,
       password: cryptedPassword,
+      safeToken:rib
     })
     await user.save()
     res.send({ message: "User created successfully", status: "success" })
