@@ -5,6 +5,8 @@ const cartebancaireSchema = new Schema({
   cardLabel: { type: String, required:true},
   isdefault: { type: Boolean, default: false },
 
+  dateExperation:{ type: Date, default:Date.now},
+  nomProprietaire:{type:String, default:"temporary name"}
 },{timestamps:true})
 
 const utilisateurSchema = new Schema({
