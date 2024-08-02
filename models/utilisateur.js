@@ -7,6 +7,7 @@ const cartebancaireSchema = new Schema({
 
   dateExperation:{ type: Date, default:Date.now},
   nomProprietaire:{type:String, default:"temporary name"}
+
 },{timestamps:true})
 
 const utilisateurSchema = new Schema({
@@ -21,7 +22,7 @@ const utilisateurSchema = new Schema({
       unique:true
   },
   cards: { type: [cartebancaireSchema], default: [] },
-  
+  isBlocked:{type:Boolean, default:false}
 },{timestamps:true})
 
 const Utilisateur = model("Utilisateur", utilisateurSchema)

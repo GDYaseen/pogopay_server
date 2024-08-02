@@ -3,11 +3,16 @@ import https from "https"
 import fs from "fs"
 import { dbConnect } from "./db.js"
 import AuthRouter from "./routes/authRoute.js"
+import StaffAuthRouter from "./routes/staffAuthRoute.js"
 import UserRouter from "./routes/userRoute.js"
 import PaimentRouter from "./routes/paimentRoute.js"
 import CarteRouter from "./routes/carteRoute.js"
 import CMIRouter from "./routes/cmiRoute.js"
 import cors from "cors"
+
+
+
+
 
 const app = express()
 const port = 3000
@@ -34,6 +39,7 @@ app.use(cors({ origin: "*" }))
 
 app.use(json())
 app.use("/auth", AuthRouter)
+app.use("/dashboardauth", StaffAuthRouter)
 app.use("/user", UserRouter)
 app.use("/paiment", PaimentRouter)
 app.use("/carte", CarteRouter)
@@ -43,7 +49,7 @@ dbConnect()
 .then(() => console.log("MongoDB connected"))
 .catch((err) => console.error("MongoDB connection error:", err))
 
-app.get("/", async (req, res) => {
+app.get("/", (req, res) => {
   res.send("hi, the server is active")
 })
 

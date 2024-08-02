@@ -10,7 +10,7 @@ config()
 
 router.post("/add-card", async (req,res)=>{
     console.log("addcard")
-    if(req.body.ProcReturnCode=="99") {//99 if its an error, 00 if its ok
+    if(req.body.ProcReturnCode=="99") {//99 if its an error, 00 if its ok. For now keep it 99
         let u = await Utilisateur.findOne({safeToken:req.body.MERCHANTSAFEKEY});
         //console.log(u)
         try{
@@ -21,7 +21,7 @@ router.post("/add-card", async (req,res)=>{
             console.log(e)
             return
         }
-        res.json(u)
+        res.json({message:'Card added Successfully',status:'success'})
         return
     }
     res.status(500).json({message:"CMI error",status:'error'})

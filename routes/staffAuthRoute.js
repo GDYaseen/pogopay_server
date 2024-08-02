@@ -1,16 +1,14 @@
 import { Router } from "express"
-import Utilisateur from "../models/utilisateur.js"
-import { generateAccessToken } from "../middleware.js"
-import bcrypt, { compare } from "bcrypt"
-import { body, validationResult } from "express-validator"
 import Staff from "../models/staff.js"
+import { generateAccessToken } from "../middleware.js"
+import bcrypt from "bcrypt"
+import { body, validationResult } from "express-validator"
 
 const router = Router()
 
-
-// data validator for login(mobile app)
+// data validator for login
 const loginValidator = [
-  body("login").trim().notEmpty(),
+  body("username").trim().notEmpty(),
   body("password").trim().notEmpty().isLength({ min: 8 }),
   (req, res, next) => {
     const errors = validationResult(req)
@@ -23,34 +21,26 @@ const loginValidator = [
   },
 ]
 
-
-
-
-
-
-
-// login for mobile app 
+// login
 
 router.post("/login", loginValidator, async (req, res) => {
   try {
-    const { login, password } = req.body
-    const user = await Utilisateur.findOne({ telephone: login }).select(
-      "-cards"
-    )
-    if (!user) {
-      return res.status(400).send({ message: "User not found", status: "error" })
+    const { username, password } = req.body
+    const staff = await Staff.findOne({ username: username })
+    if (!staff) {
+      return res.status(400).send({ message: "staff not found", status: "error" })
     }
-    if (!bcrypt.compareSync(password, user.password)) {
+    if (!bcrypt.compareSync(password, staff.password)) {
       return res.status(400).send({ message: "password incorrect", status: "error" })
     }
 
-    const token = generateAccessToken(user.id)
+    const token = generateAccessToken(staff.id)
     res.send({
-      message: "User logged in successfully",
+      message: "Staff logged in successfully",
       status: "success",
       data: {
         token,
-        user,
+        staff,
       },
     })
   } catch (error) {
@@ -63,7 +53,7 @@ router.post("/login", loginValidator, async (req, res) => {
 const registreValidator = [
   body("nom").trim().notEmpty(),
   body("prenom").trim().notEmpty(),
-  body("telephone").trim().notEmpty().isLength({ min: 10 }),
+  body("username").trim().notEmpty().isLength({ min: 5 }),
   body("password").trim().notEmpty().isLength({ min: 8 }),
   body("confirmePassword")
     .trim()
@@ -88,28 +78,21 @@ const registreValidator = [
 
 // register
 
-router.post("/registre", registreValidator, async (req, res) => {
+router.post("/register", registreValidator, async (req, res) => {
   try {
-    const { nom, prenom, telephone, password, rib} = req.body
+    const { nom, prenom, username, password} = req.body
     const cryptedPassword = await bcrypt.hash(password, 10)
-    const user = new Utilisateur({
-      nom,
-      prenom,
-      telephone,
+    const staff = new Staff({
+      fullName:`${prenom} ${nom}`,
+      username,
       password: cryptedPassword,
-      safeToken:rib
     })
-    await user.save()
-    res.send({ message: "User created successfully", status: "success" })
+    await staff.save()
+    res.send({ message: "Staff created successfully", status: "success" })
   } catch (error) {
     res.status(500).json({ message: error.message, status: "error" })
     console.error(error)
   }
 })
-
-// phone validation
-// router.post("/phoneValidation", async (req, res) => {
-
-// })
 
 export default router

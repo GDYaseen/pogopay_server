@@ -4,8 +4,43 @@ import { body, validationResult } from "express-validator"
 import { parseStringPromise } from "xml2js"
 import Utilisateur from "../models/utilisateur.js"
 import Paiment from "../models/paiment.js"
+import crypto from 'crypto';
+import GroupedPaiment from "../models/groupedPaiments.js"
+import { Types } from "mongoose"
+import BigNumber from "bignumber.js"
+import generateFacture from "../util/pdfGenerator.js"
 
 const router = Router()
+
+router.get("/facturer/:id",async (req,res)=>{
+  try {
+      const { id } = req.params;
+      
+      let paiments = await GroupedPaiment.findById(id)
+        .populate({
+          path: "paiments",
+          populate: {
+            path: "emeteur",
+            select: ["nom", "prenom", "telephone"]
+          }
+        })
+        .populate({
+          path: "destinataire",
+          select: ["nom", "prenom", "telephone", "safeToken"],
+        })
+        .exec();
+  
+    const pdfBuffer = generateFacture(paiments)
+
+    // res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
+    res.setHeader('Content-Type', 'application/pdf').send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error creating PDF:', error);
+    res.status(500).send('Internal Server Error');
+  }
+})
+
 
 // paiment validator
 const paimentValidator = [
@@ -28,14 +63,14 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
     const { id: emeteur_id } = req.user
 
     // recuperatoin des informations nécessaire
-    const emeteur = await Utilisateur.findById(emeteur_id).select(
-      "carteBancaire"
-    )
-
-    const recepteur = await Utilisateur.findById(recepteur_id).select(
-      "carteBancaire"
-    )
-
+    const emeteur = await Utilisateur.findById(emeteur_id)
+    // .select(
+    //   "cards"
+    // )
+    const recepteur = await Utilisateur.findById(recepteur_id)
+    // .select(
+    //   "cards"
+    // )
     if (!emeteur || !recepteur) {
       return res
         .status(404)
@@ -49,21 +84,19 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
     }
 
     // recuperation de la carte
-    if (
-      emeteur.carteBancaire.length == 0 ||
-      recepteur.carteBancaire.length == 0
-    ) {
-      return res
-        .status(404)
-        .json({ message: "aucun carte bancaire trouvé", status: "error" })
-    }
+    // if (
+    //   emeteur.cards.length == 0 ||
+    //   recepteur.cards.length == 0
+    // ) {
+    //   return res
+    //     .status(404)
+    //     .json({ message: "aucun carte bancaire trouvé", status: "error" })
+    // }
 
-    const emeteurCarte = emeteur.carteBancaire.find((carte) => carte.isdefault)
-    const recepteurCarte = recepteur.carteBancaire.find(
-      (carte) => carte.isdefault
-    )
-    if (!emeteurCarte || !recepteurCarte) {
-      return res.status(404).json({ message: "Carte bancaire non trouvée" })
+    const emeteurToken = emeteur.safeToken
+    const recepteurToken = recepteur.safeToken
+    if (!emeteurToken || !recepteurToken) {
+      return res.status(404).json({ message: "Rib non trouvée" })
     }
 
     // formatage de la date d'expiration
@@ -169,17 +202,37 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
     // }
 
     // transaction reussite
-    await new Paiment({
+    const paiment = await new Paiment({
       emeteur: emeteur_id,
       destinataire: recepteur_id,
-      cartebancaireEmeteur: emeteurCarte.id,
-      cartebancaireDestinataire: recepteurCarte.id,
       montant: amount,
       dateOperation: new Date(),
-      Etat_de_la_transaction: "en cours",
-      remarque: "Paiment est en cours de traitement",
+      Etat_de_la_transaction: "reussie",
     }).save()
-    console.log("nice")
+
+    if(paiment){
+      let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur_id})
+      if(group.length==0)
+        await new GroupedPaiment({
+          total:paiment.Etat_de_la_transaction=="reussie"?paiment.montant:0,
+          destinataire:recepteur_id,
+          paiments:[paiment]
+        }).save()
+      else{
+        const montantBig = new BigNumber(paiment.montant.toString());
+        const totalBig = new BigNumber(group[0].total.toString());
+
+        // Add the BigNumber values
+        const sumBig = montantBig.plus(totalBig);
+
+        // Convert the result back to Decimal128
+        const sumDecimal = Types.Decimal128.fromString(sumBig.toString());
+        
+        paiment.Etat_de_la_transaction=="reussie"?group[0].total = sumDecimal:null;
+        group[0].paiments.push(paiment)
+        await group[0].save()
+      }
+    }
 
     return res.status(200).json({ message: "Paiment success" })
   } catch (error) {
@@ -195,7 +248,7 @@ router.get("/historique", authenticateToken, async (req, res) => {
     const historique = await Paiment.find({ emeteur: id })
       .populate({
         path: "destinataire",
-        select: ["nom", "prenom", "telephone", "carteBancaire"],
+        select: ["nom", "prenom", "telephone", "safeToken"],
       })
       .exec()
     res.status(200).json({ historique })
@@ -204,69 +257,76 @@ router.get("/historique", authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
-
-router.get("/historique/:etat", async (req, res) => {
+router.get("/groupdetails/:id", async (req, res) => {
   try {
-    const { etat } = req.params
-    let historique = await Paiment.find()
+    const { id } = req.params;
+    const { status } = req.query; // Get the status query parameter
+
+    // Build the filter based on the status parameter
+    let paimentFilter = {};
+    if (status) {
+      paimentFilter = { "Etat_de_la_transaction": status };
+    }
+    let paiments = await GroupedPaiment.findById(id)
       .populate({
-        path: "emeteur",
-        select: ["nom", "prenom", "telephone", "carteBancaire"],
+        path: "paiments",
+        match:paimentFilter,
+        populate: {
+          path: "emeteur",
+          select: ["nom", "prenom", "telephone"]
+        }
       })
       .populate({
         path: "destinataire",
-        select: ["nom", "prenom", "telephone", "carteBancaire"],
+        select: ["nom", "prenom", "telephone", "safeToken"],
       })
-      .exec()
+      .exec();
 
+    res.send(paiments);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: error.message, status: "error" });
+  }
+});
+router.get("/historique/:etat", async (req, res) => {
+  try {
+    const { etat } = req.params;
+    let statusFilter
     switch (etat) {
       case "encours":
-        historique = historique.filter(
-          (doc) => doc.Etat_de_la_transaction == "en cours"
-        )
-        break
+          statusFilter = "en cours"
+        break;
       case "echouee":
-        historique = historique.filter(
-          (doc) => doc.Etat_de_la_transaction == "échouer"
-        )
-        break
+          statusFilter = "échouer"
+        break;
       case "reussie":
-        historique = historique.filter(
-          (doc) => doc.Etat_de_la_transaction == "reussie"
-        )
-        break
-
+          statusFilter = "reussie"
+        break;
       default:
-        historique = []
-        break
+        historique = [];
+        break;
     }
+    let historique = await GroupedPaiment.find({status:statusFilter})
+      .populate({
+        path: "destinataire",
+        select: ["nom", "prenom", "telephone", "safeToken"],
+      })
+      .exec();
 
-    historique.forEach((doc) => {
-      if (doc.emeteur && doc.emeteur.carteBancaire) {
-        doc.emeteur.carteBancaire = doc.emeteur.carteBancaire.filter(
-          (carte) => carte.id === doc.cartebancaireEmeteur.toString()
-        )
-      }
-      if (doc.destinataire && doc.destinataire.carteBancaire) {
-        doc.destinataire.carteBancaire = doc.destinataire.carteBancaire.filter(
-          (carte) => carte.id === doc.cartebancaireDestinataire.toString()
-        )
-      }
-    })
-
-    res.send(historique)
+    res.send(historique);
   } catch (error) {
-    console.error(error.message)
-    res.status(500).json({ message: error.message, status: "error" })
+    console.error(error.message);
+    res.status(500).json({ message: error.message, status: "error" });
   }
-})
+});
+
 
 router.put("/etat", async (req, res) => {
   try {
-    const { id, etat } = req.body
-    await Paiment.findByIdAndUpdate(id, { Etat_de_la_transaction: etat })
+    const { id, etat , codeVirement} = req.body
+    await GroupedPaiment.findByIdAndUpdate(id, { status: etat ,codeVirement:codeVirement})
     res.send({
-      message: "Etat de la transaction modifié avec succès",
+      message: "État du groupe de transaction est modifié avec succès",
       status: "success",
     })
   } catch (error) {
@@ -274,5 +334,35 @@ router.put("/etat", async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
+
+router.post('/add-card', authenticateToken, async (req, res) => {
+  const storeKey = "TEST1234"; // Your store key
+
+    // Extract and sort POST parameters
+    let postParams = Object.keys(req.body);
+    postParams.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    // Construct hash value
+    let hashval = '';
+    postParams.forEach(param => {
+        if (param.toLowerCase() !== 'hash' && param.toLowerCase() !== 'encoding') {
+            hashval += req.body[param].trim() + '|';
+        }
+    });
+    hashval += storeKey;
+    // Calculate hash
+    const calculatedHashValue = crypto.createHash('sha512').update(hashval).digest('base64');
+    // Render the form with calculated hash
+    res.send(`
+        <form id="pay_form" name="pay_form" method="post" action="https://testpayment.cmi.co.ma/fim/est3Dgate">
+            ${postParams.map(param => `<input type="hidden" name="${param}" value="${req.body[param]}" />`).join('\n')}
+            <input type="hidden" name="HASH" value="${calculatedHashValue}" /> here i am
+        </form>
+        <script>
+            window.onload = function() {
+                document.getElementById('pay_form').submit();
+            }
+        </script>
+    `);
+});
 
 export default router
