@@ -37,7 +37,7 @@ router.all("/addcardgateway",async (req,res)=>{
     postData.HASH = hash;
 
     let formHtml = '<html><head><title>Redirecting...</title></head><body onload="document.forms[0].submit()">';
-    formHtml += '<form method="post" action="https://testpayment.cmi.co.ma/fim/est3Dgate">';
+    formHtml += '<form method="post" action="https://payment.cmi.co.ma/fim/est3Dgate">';
 
     for (const [key, value] of Object.entries(postData)) {
         formHtml += `<input type="hidden" name="${key}" value="${value}" />\n`;

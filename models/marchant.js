@@ -1,7 +1,7 @@
 import { model, Schema } from "mongoose"
 
 const marchantSchema = new Schema({
-  user: { type: Schema.Types.ObjectId,ref:"Utilisateur",required: true },
+  user: { type: Schema.Types.ObjectId,ref:"Utilisateur",unique:true,required: true },
   logo: { type:String}, //base64
   nomMarchant: { type: String },
   RC: { type: String },

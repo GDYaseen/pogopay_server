@@ -9,6 +9,7 @@ import PaimentRouter from "./routes/paimentRoute.js"
 import CarteRouter from "./routes/carteRoute.js"
 import CMIRouter from "./routes/cmiRoute.js"
 import cors from "cors"
+import MarchantRoute from "./routes/marchantRoute.js"
 
 
 
@@ -44,6 +45,7 @@ app.use("/user", UserRouter)
 app.use("/paiment", PaimentRouter)
 app.use("/carte", CarteRouter)
 app.use("/cmi", CMIRouter)
+app.use("/marchant", MarchantRoute)
 
 dbConnect()
 .then(() => console.log("MongoDB connected"))
