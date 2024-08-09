@@ -8,15 +8,16 @@ import Utilisateur from "../models/utilisateur.js"
 config()
 
 router.all("/addcardgateway",async (req,res)=>{
-    if(!req.body.rib && process.env.ENV=='prod'){
-        res.status(400).send("Rib not sent")
+    if(!req.body.idToUse){
+        res.status(400).send("Id not sent")
         return
     }
+    console.log("from addcardgateway: ",req.body.idToUse)
     const postData = {
         clientid: process.env.CLIENTID,
         amount: "1.00",
-        okUrl: process.env.OKURL,
-        failUrl: process.env.FAILURL,
+        okUrl: process.env.OKURL+`/${req.body.idToUse}`,
+        failUrl: process.env.FAILURL+`/${req.body.idToUse}`,
         TranType: "PreAuth",
         callbackUrl: process.env.CALLBACKURL,
         currency: "504",
@@ -26,7 +27,7 @@ router.all("/addcardgateway",async (req,res)=>{
         lang: "fr",
         encoding: "UTF-8",
         MERCHANTSAFE: "MERCHANTSAFE",
-        MERCHANTSAFEKEY: "gounane1234",//req.body.rib?req.body.rib:"TOKEN1234", //rib
+        // MERCHANTSAFEKEY: req.body.safeToken, //rib
         MERCHANTSAFEAUTHTYPE: "3DPAYAUTH",
         MERCHANTSAFEACQUIRER: process.env.MERCHANTSAFEACQUIRER,
         MERCHANTGROUPID: process.env.MERCHANTGROUPID
@@ -37,7 +38,7 @@ router.all("/addcardgateway",async (req,res)=>{
     postData.HASH = hash;
 
     let formHtml = '<html><head><title>Redirecting...</title></head><body onload="document.forms[0].submit()">';
-    formHtml += '<form method="post" action="https://payment.cmi.co.ma/fim/est3Dgate">';
+    formHtml += '<form method="post" action="https://testpayment.cmi.co.ma/fim/est3Dgate">';
 
     for (const [key, value] of Object.entries(postData)) {
         formHtml += `<input type="hidden" name="${key}" value="${value}" />\n`;

@@ -248,7 +248,7 @@ router.get("/historique", authenticateToken, async (req, res) => {
     const historique = await Paiment.find({ emeteur: id })
       .populate({
         path: "destinataire",
-        select: ["nom", "prenom", "telephone", "safeToken"],
+        select: ["nom", "prenom", "telephone", "marchandData"],
       })
       .exec()
     res.status(200).json({ historique })
@@ -278,7 +278,7 @@ router.get("/groupdetails/:id", async (req, res) => {
       })
       .populate({
         path: "destinataire",
-        select: ["nom", "prenom", "telephone", "safeToken"],
+        select: ["nom", "prenom", "telephone", "marchandData"],
       })
       .exec();
 
@@ -309,10 +309,9 @@ router.get("/historique/:etat", async (req, res) => {
     let historique = await GroupedPaiment.find({status:statusFilter})
       .populate({
         path: "destinataire",
-        select: ["nom", "prenom", "telephone", "safeToken"],
+        select: ["nom", "prenom", "telephone", "marchandData"],
       })
       .exec();
-
     res.send(historique);
   } catch (error) {
     console.error(error.message);

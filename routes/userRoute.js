@@ -25,8 +25,8 @@ const userValidator = [
 
 router.get("/list",async (req,res)=>{
   try {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    // const oneWeekAgo = new Date();
+    // oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const users = await Utilisateur.aggregate([
       {
@@ -39,7 +39,7 @@ router.get("/list",async (req,res)=>{
                 $expr: {
                   $and: [
                     { $eq: ["$emeteur", "$$userId"] },
-                    { $gte: ["$dateOperation", oneWeekAgo] }
+                    // { $gte: ["$dateOperation", oneWeekAgo] }
                   ]
                 }
               }
@@ -144,7 +144,7 @@ router.get("/paimentsbyUser/:id", async (req, res) => {
     const historique = await Paiment.find({ emeteur: id ,...paimentFilter})
     .populate({
       path: "destinataire",
-      select: ["nom", "prenom", "telephone", "safeToken"],
+      select: ["nom", "prenom", "telephone", "marchandData"],
     })
       .exec()
     res.status(200).send({user,historique})

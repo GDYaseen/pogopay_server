@@ -8,13 +8,17 @@ import { read } from "fs"
 
 config()
 
-router.post("/add-card", async (req,res)=>{
-    console.log("addcard")
-    if(req.body.ProcReturnCode=="99") {//99 if its an error, 00 if its ok. For now keep it 99
-        let u = await Utilisateur.findOne({safeToken:req.body.MERCHANTSAFEKEY});
+router.get("/add-card/:idToUse", async (req,res)=>{
+    console.log("from add-card: ",req.params.idToUse, req.body.MERCHANTSAFEKEY)
+    if(!req.params.idToUse){
+        res.status(400).send("Id not sent")
+        return
+    }
+    // if(req.body.ProcReturnCode=="99") {//99 if its an error, 00 if its ok. For now keep it 99
+        let u = await Utilisateur.findById(req.params.idToUse);
         //console.log(u)
         try{
-            u.cards.push({maskedCard:req.body.maskedCreditCard,cardLabel:req.body.MERCHANTSAFELABEL})
+            u.cards.push({maskedCard:req.body.maskedCreditCard,safeToken:req.body.MERCHANTSAFEKEY,cardLabel:req.body.MERCHANTSAFELABEL})
             await u.save()
         }catch(e){
             res.status(500).json({message:e,status:'error'})
@@ -23,8 +27,8 @@ router.post("/add-card", async (req,res)=>{
         }
         res.json({message:'Card added Successfully',status:'success'})
         return
-    }
-    res.status(500).json({message:"CMI error",status:'error'})
+    // }
+    // res.status(500).json({message:"CMI error",status:'error'})
 })
 
 export default router

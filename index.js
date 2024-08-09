@@ -45,7 +45,7 @@ app.use("/user", UserRouter)
 app.use("/paiment", PaimentRouter)
 app.use("/carte", CarteRouter)
 app.use("/cmi", CMIRouter)
-app.use("/marchant", MarchantRoute)
+app.use("/marchand", MarchantRoute)
 
 dbConnect()
 .then(() => console.log("MongoDB connected"))

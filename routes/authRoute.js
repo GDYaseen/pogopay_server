@@ -43,9 +43,11 @@ router.post("/login", loginValidator, async (req, res) => {
     if (!bcrypt.compareSync(password, user.password)) {
       return res.status(400).send({ message: "password incorrect", status: "error" })
     }
+    if(!user.marchandData.nomMarchand && !user.marchandData.IF && !user.marchandData.RC && !user.marchandData.percent && !user.marchandData.rib)
+      user.marchandData = undefined
 
     const token = generateAccessToken(user.id)
-    res.send({
+    res.json({
       message: "User logged in successfully",
       status: "success",
       data: {
@@ -54,6 +56,7 @@ router.post("/login", loginValidator, async (req, res) => {
       },
     })
   } catch (error) {
+    console.log(error.message)
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
@@ -90,17 +93,17 @@ const registreValidator = [
 
 router.post("/registre", registreValidator, async (req, res) => {
   try {
-    const { nom, prenom, telephone, password, rib} = req.body
+    console.log(req.body)
+    const { nom, prenom, telephone, password} = req.body
     const cryptedPassword = await bcrypt.hash(password, 10)
-    const user = new Utilisateur({
+    const user = await new Utilisateur({
       nom,
       prenom,
       telephone,
       password: cryptedPassword,
-      safeToken:rib
-    })
-    await user.save()
-    res.send({ message: "User created successfully", status: "success" })
+      // safeToken:rib
+    }).save()
+    res.send({ message: "User created successfully", idToUse:user._id ,status: "success" })
   } catch (error) {
     res.status(500).json({ message: error.message, status: "error" })
     console.error(error)
