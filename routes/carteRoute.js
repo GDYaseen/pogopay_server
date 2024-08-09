@@ -8,7 +8,7 @@ import { read } from "fs"
 
 config()
 
-router.get("/add-card/:idToUse", async (req,res)=>{
+router.post("/add-card/:idToUse", async (req,res)=>{
     console.log("from add-card: ",req.params.idToUse, req.body.MERCHANTSAFEKEY)
     if(!req.params.idToUse){
         res.status(400).send("Id not sent")
