@@ -10,9 +10,9 @@ config()
 
 router.post("/add-card/:idToUse", async (req,res)=>{
     console.log("this is the body received:")
-    console.log(req.body)
-    console.log("from add-card: ",req.params.idToUse, req.body.MERCHANTSAFEKEY)
-    res.send(req)
+    console.log(req)
+    //console.log("from add-card: ",req.params.idToUse, req.body.MERCHANTSAFEKEY)
+    res.send(req.body)
     // if(!req.params.idToUse){
     //     res.status(400).send("Id not sent")
     //     return
