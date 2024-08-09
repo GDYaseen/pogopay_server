@@ -27,7 +27,7 @@ router.all("/addcardgateway/:idToUse",async (req,res)=>{
         lang: "fr",
         encoding: "UTF-8",
         MERCHANTSAFE: "MERCHANTSAFE",
-        // MERCHANTSAFEKEY: req.body.safeToken, //rib
+        MERCHANTSAFEKEY: "toBeRemovedLater", //rib
         MERCHANTSAFEAUTHTYPE: "3DPAYAUTH",
         MERCHANTSAFEACQUIRER: process.env.MERCHANTSAFEACQUIRER,
         MERCHANTGROUPID: process.env.MERCHANTGROUPID
