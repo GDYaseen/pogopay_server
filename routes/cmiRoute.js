@@ -7,7 +7,7 @@ import Utilisateur from "../models/utilisateur.js"
 
 config()
 
-router.all("/addcardgateway",async (req,res)=>{
+router.all("/addcardgateway/:idToUse",async (req,res)=>{
     if(!req.body.idToUse){
         res.status(400).send("Id not sent")
         return
@@ -16,8 +16,8 @@ router.all("/addcardgateway",async (req,res)=>{
     const postData = {
         clientid: process.env.CLIENTID,
         amount: "1.00",
-        okUrl: process.env.OKURL+`/${req.body.idToUse}`,
-        failUrl: process.env.FAILURL+`/${req.body.idToUse}`,
+        okUrl: process.env.OKURL+`/${req.params.idToUse}`,
+        failUrl: process.env.FAILURL+`/${req.params.idToUse}`,
         TranType: "PreAuth",
         callbackUrl: process.env.CALLBACKURL,
         currency: "504",
