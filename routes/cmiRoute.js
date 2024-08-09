@@ -8,7 +8,7 @@ import Utilisateur from "../models/utilisateur.js"
 config()
 
 router.all("/addcardgateway/:idToUse",async (req,res)=>{
-    if(!req.body.idToUse){
+    if(!req.body.idToUse && !req.params.idToUse){
         res.status(400).send("Id not sent")
         return
     }
