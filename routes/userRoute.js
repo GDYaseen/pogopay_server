@@ -306,9 +306,9 @@ router.post("/addCarte",authenticateToken,carteValidator,
 router.get("/defaultCarte", authenticateToken, async (req, res) => {
   try {
     const { id } = req.user
-
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
+      console.log({ message: "Validation failed", errors: errors.array()})
       return res
         .status(400)
         .json({ message: "Validation failed", errors: errors.array() })
@@ -317,6 +317,7 @@ router.get("/defaultCarte", authenticateToken, async (req, res) => {
     // Find the user by ID
     const utilisateur = await Utilisateur.findById(id).select("cards")
     if (!utilisateur) {
+      console.log({ message: "Utilisateur non trouvé", status: "error"})
       return res
         .status(404)
         .json({ message: "Utilisateur non trouvé", status: "error" })
@@ -324,6 +325,7 @@ router.get("/defaultCarte", authenticateToken, async (req, res) => {
 
     const carteNumber = utilisateur.cards.length
     if (carteNumber == 0) {
+      console.log({ message: "ajouter une carte bancaire", status: "error"})
       return res
         .status(404)
         .json({ message: "ajouter une carte bancaire", status: "error" })
@@ -333,6 +335,7 @@ router.get("/defaultCarte", authenticateToken, async (req, res) => {
       (carte) => carte.isdefault
     )
     if (!defaultCard) {
+      console.log({ message: "Carte bancaire non trouvée" })
       return res.status(404).json({ message: "Carte bancaire non trouvée" })
     }
 
@@ -405,8 +408,8 @@ router.post(
       const errors = validationResult(req)
       const { id } = req.user
       const carteID = req.params.id
-
       if (!errors.isEmpty()) {
+        console.log({ message: "Validation failed", errors: errors.array() })
         return res
           .status(400)
           .json({ message: "Validation failed", errors: errors.array() })
@@ -414,6 +417,7 @@ router.post(
 
       const utilisateur = await Utilisateur.findById(id).select("cards")
       if (!utilisateur) {
+        console.log({ message: "Utilisateur non trouvé", status: "error" })
         return res
           .status(404)
           .json({ message: "Utilisateur non trouvé", status: "error" })
@@ -421,6 +425,7 @@ router.post(
 
       const carte = utilisateur.cards.id(carteID)
       if (!carte) {
+        console.log({ message: "Carte non trouvé", status: "error" })
         return res
           .status(404)
           .json({ message: "Carte non trouvé", status: "error" })
@@ -430,6 +435,7 @@ router.post(
         (carte) => carte.isdefault
       )
       if (!defaultCard) {
+        console.log({ message: "Carte bancaire non trouvée" })
         return res.status(404).json({ message: "Carte bancaire non trouvée" })
       }
 

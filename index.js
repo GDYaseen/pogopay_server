@@ -1,4 +1,4 @@
-import express, { json } from "express"
+import express, { json, urlencoded } from "express"
 import https from "https"
 import fs from "fs"
 import { dbConnect } from "./db.js"
@@ -39,6 +39,7 @@ app.use(cors({ origin: "*" }))
 // app.use(ensureSecure)
 
 app.use(json())
+app.use(urlencoded({ extended: true }));
 app.use("/auth", AuthRouter)
 app.use("/dashboardauth", StaffAuthRouter)
 app.use("/user", UserRouter)

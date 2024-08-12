@@ -7,8 +7,8 @@ import Utilisateur from "../models/utilisateur.js"
 
 config()
 
-router.all("/addcardgateway/:idToUse",async (req,res)=>{
-    if(!req.body.idToUse && !req.params.idToUse){
+router.post("/addcardgateway",async (req,res)=>{
+    if(!req.body.idToUse){
         res.status(400).send("Id not sent")
         return
     }
@@ -16,10 +16,10 @@ router.all("/addcardgateway/:idToUse",async (req,res)=>{
     const postData = {
         clientid: process.env.CLIENTID,
         amount: "1.00",
-        okUrl: process.env.OKURL+`/${req.params.idToUse}`,
-        failUrl: process.env.FAILURL+`/${req.params.idToUse}`,
+        okUrl: process.env.OKURL+`/${req.body.idToUse}`,
+        failUrl: process.env.FAILURL+`/${req.body.idToUse}`,
         TranType: "PreAuth",
-        callbackUrl: process.env.CALLBACKURL,
+        callbackUrl: process.env.CALLBACKURL+`/${req.body.idToUse}`,
         currency: "504",
         rnd: getMicrosecondsSinceEpoch(),
         storetype: "3DPAYHOSTING",
@@ -27,7 +27,7 @@ router.all("/addcardgateway/:idToUse",async (req,res)=>{
         lang: "fr",
         encoding: "UTF-8",
         MERCHANTSAFE: "MERCHANTSAFE",
-        MERCHANTSAFEKEY: "toBeRemovedLater", //rib
+        // MERCHANTSAFEKEY: req.body.safeToken, //rib
         MERCHANTSAFEAUTHTYPE: "3DPAYAUTH",
         MERCHANTSAFEACQUIRER: process.env.MERCHANTSAFEACQUIRER,
         MERCHANTGROUPID: process.env.MERCHANTGROUPID
@@ -38,7 +38,7 @@ router.all("/addcardgateway/:idToUse",async (req,res)=>{
     postData.HASH = hash;
 
     let formHtml = '<html><head><title>Redirecting...</title></head><body onload="document.forms[0].submit()">';
-    formHtml += '<form method="post" action="https://testpayment.cmi.co.ma/fim/est3Dgate">';
+    formHtml += '<form method="post" action="https://payment.cmi.co.ma/fim/est3Dgate">';
 
     for (const [key, value] of Object.entries(postData)) {
         formHtml += `<input type="hidden" name="${key}" value="${value}" />\n`;

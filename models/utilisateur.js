@@ -13,7 +13,7 @@ const cartebancaireSchema = new Schema({
   dateExperation:{ type: Date, default:Date.now},
   nomProprietaire:{type:String, default:"temporary name"}
 
-},{timestamps:true})
+})
 
 const marchantSchema = new Schema({
   rib:{ type:String},
@@ -33,6 +33,17 @@ const utilisateurSchema = new Schema({
   isBlocked:{type:Boolean, default:false},
   marchandData:{type:marchantSchema,default:{}},
 },{timestamps:true})
+
+utilisateurSchema.pre('save', function (next) {
+  const utilisateur = this;
+
+  // If no card is marked as default and at least one card exists, set the first card to default
+  if (utilisateur.cards.length > 0 && !utilisateur.cards.some(card => card.isdefault)) {
+    utilisateur.cards[0].isdefault = true;
+  }
+
+  next();
+});
 
 const Utilisateur = model("Utilisateur", utilisateurSchema)
 

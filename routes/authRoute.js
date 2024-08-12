@@ -47,6 +47,7 @@ router.post("/login", loginValidator, async (req, res) => {
       user.marchandData = undefined
 
     const token = generateAccessToken(user.id)
+
     res.json({
       message: "User logged in successfully",
       status: "success",

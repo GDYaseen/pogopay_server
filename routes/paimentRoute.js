@@ -9,8 +9,11 @@ import GroupedPaiment from "../models/groupedPaiments.js"
 import { Types } from "mongoose"
 import BigNumber from "bignumber.js"
 import generateFacture from "../util/pdfGenerator.js"
+import { config } from "dotenv"
 
 const router = Router()
+
+config()
 
 router.get("/facturer/:id",async (req,res)=>{
   try {
@@ -45,7 +48,7 @@ router.get("/facturer/:id",async (req,res)=>{
 // paiment validator
 const paimentValidator = [
   body("amount").trim().notEmpty().isNumeric(),
-  body("user_id").trim().notEmpty(),
+  body("target_rib").trim().notEmpty(),
   (req, res, next) => {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -59,46 +62,45 @@ const paimentValidator = [
 
 router.post("/", authenticateToken, paimentValidator, async (req, res) => {
   try {
-    const { amount, user_id: recepteur_id } = req.body
+    const { amount, target_rib} = req.body
     const { id: emeteur_id } = req.user
-
+    console.log(amount,target_rib,emeteur_id)
     // recuperatoin des informations nécessaire
     const emeteur = await Utilisateur.findById(emeteur_id)
     // .select(
     //   "cards"
     // )
-    const recepteur = await Utilisateur.findById(recepteur_id)
+    const recepteur = await Utilisateur.find({ "marchandData.rib": target_rib})
     // .select(
     //   "cards"
     // )
-    if (!emeteur || !recepteur) {
+    if (!emeteur || recepteur.length!=1) {
       return res
         .status(404)
         .json({ message: "Utilisateur introuvable", status: "error" })
     }
 
-    if (emeteur_id == recepteur_id) {
+    if (emeteur_id == recepteur[0]._id) {
       return res
         .status(400)
         .json({ message: "Paiment impossible", status: "error" })
     }
 
-    // recuperation de la carte
-    // if (
-    //   emeteur.cards.length == 0 ||
-    //   recepteur.cards.length == 0
-    // ) {
-    //   return res
-    //     .status(404)
-    //     .json({ message: "aucun carte bancaire trouvé", status: "error" })
-    // }
-
-    const emeteurToken = emeteur.safeToken
-    const recepteurToken = recepteur.safeToken
-    if (!emeteurToken || !recepteurToken) {
-      return res.status(404).json({ message: "Rib non trouvée" })
+    const carteNumber = emeteur.cards.length
+    if (carteNumber == 0) {
+      console.log({ message: "ajouter une carte bancaire", status: "error"})
+      return res
+        .status(404)
+        .json({ message: "ajouter une carte bancaire", status: "error" })
     }
 
+    const defaultCard = emeteur.cards.find(
+      (carte) => carte.isdefault
+    )
+    if (!defaultCard) {
+      console.log({ message: "Carte bancaire non trouvée" })
+      return res.status(404).json({ message: "Carte bancaire non trouvée" })
+    }
     // formatage de la date d'expiration
     // const expirationDate = new Date(dateExperation)
     // const month = String(expirationDate.getMonth() + 1).padStart(2, "0") // Adding 1 as getMonth() returns 0-indexed month
@@ -108,132 +110,166 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
 
     // const cmi_api = "https://testpayment.cmi.co.ma/fim/api"
 
+
+    let error = null
     // // Preauthorization
-    // const preRequestPayload = `
-    //   <CC5Request>
-    //     <Name>pogo_api</Name>
-    //     <Password>Pogo_api2022</Password>
-    //     <ClientId>600003404</ClientId>
-    //     <Type>PreAuth</Type>
-    //     <Total>${amount}</Total>
-    //     <Currency>504</Currency>
-    //     <Number>${numCarte}</Number>
-    //     <Expires>${formattedExpirationDate}</Expires>
-    //     <Cvv2Val>${cvv}</Cvv2Val>
-    //   </CC5Request>
-    // `
-    // const preRequestResponse = await fetch(cmi_api, {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/xml",
-    //   },
-    //   body: preRequestPayload,
-    // })
+    const preRequestPayload = `
+      <CC5Request>
+        <Name>${process.env.CMI_API_NAME}</Name>
+        <Password>${process.env.CMI_API_PASS}</Password>
+        <ClientId>${process.env.CLIENTID2}</ClientId>
+        <Type>PreAuth</Type>
+        <Total>${amount}</Total>
+        <Currency>504</Currency>
+        <Extra>
+				<G${process.env.MERCHANTGROUPID}>${defaultCard.safeToken}</G${process.env.MERCHANTGROUPID}>
+                <MERCHANTSAFELABEL>${defaultCard.cardLabel}</MERCHANTSAFELABEL>
+			  </Extra>
+      </CC5Request>
+    `
+    const preRequestResponse = await fetch(process.env.CMIURL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/xml",
+      },
+      body: preRequestPayload,
+    })
 
-    // const preRequestResponseText = await preRequestResponse.text()
+    const preRequestResponseText = await preRequestResponse.text()
 
-    // const { CC5Response: preResponse } = await parseStringPromise(
-    //   preRequestResponseText,
-    //   {
-    //     explicitArray: false,
-    //   }
-    // )
+    const { CC5Response: preResponse } = await parseStringPromise(
+      preRequestResponseText,
+      {
+        explicitArray: false,
+      }
+    )
+    console.log(preResponse)
+    let paiment
+    if (preResponse.Response == "Declined" || preResponse.Response == "Error") {
+        paiment = await new Paiment({
+          emeteur: emeteur_id,
+          destinataire: recepteur[0]._id,
+          montant: amount,
+          dateOperation: new Date(),
+          Etat_de_la_transaction: "echouee",
+        }).save()
 
-    // if (preResponse.Response == "Declined" || preResponse.Response == "Error") {
-    //   await new Paiment({
-    //     emeteur: emeteur_id,
-    //     destinataire: recepteur_id,
-    //     cartebancaireEmeteur: emeteurCarte.id,
-    //     cartebancaireDestinataire: recepteurCarte.id,
-    //     montant: amount,
-    //     dateOperation: new Date(),
-    //     Etat_de_la_transaction: "échouer",
-    //     remarque: preResponse.ErrMsg,
-    //   }).save()
+      error={ message: preResponse.ErrMsg, status: preResponse.Response }
+    }else{
+          // Postauthorization
+                const postRequestPayload = `
+                  <CC5Request>
+                    <Name>${process.env.CMI_API_NAME}</Name>
+                    <Password>${process.env.CMI_API_PASS}</Password>
+                    <ClientId>${process.env.CLIENTID2}</ClientId>
+                    <Type>PostAuth</Type>
+                    <OrderId>${preResponse.OrderId}</OrderId>
+                  </CC5Request>
+                `
+                const postRequestResponse = await fetch(process.env.CMIURL, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/xml",
+                  },
+                  body: postRequestPayload,
+                })
+                const postRequestResponseText = await postRequestResponse.text()
+              
+                const { CC5Response: postResponse } = await parseStringPromise(
+                  postRequestResponseText,
+                  {
+                    explicitArray: false,
+                  }
+                )
+              
+                console.log(postResponse)
+              
+                if (postResponse.Response == "Declined" || postResponse.Response == "Error") {
+                  paiment = await new Paiment({
+                    emeteur: emeteur_id,
+                    destinataire: recepteur[0]._id,
+                    montant: amount,
+                    dateOperation: new Date(),
+                    Etat_de_la_transaction: "echouee",
+                  }).save()
+                    error={ message: postResponse.ErrMsg, status: postResponse.Response }
+                }else{  
+                            const statusRequestPayload = `
+                                   <CC5Request>
+                                   <Name>${process.env.CMI_API_NAME}</Name>
+                                   <Password>${process.env.CMI_API_PASS}</Password>
+                                   <ClientId>${process.env.CLIENTID2}</ClientId>
+                                   <OrderId>${preResponse.OrderId}</OrderId>
+                                   <Extra>
+                                   <ORDERSTATUS>QUERY</ORDERSTATUS>
+                               	    </Extra>
+                                     </CC5Request>
+                                     `
+                                     const statusRequestResponse = await fetch(process.env.CMIURL, {
+                                       method: "POST",
+                                       headers: {
+                                         "Content-Type": "application/xml",
+                                        },
+                                   body: statusRequestPayload,
+                                  })
+                                 const statusRequestResponseText = await statusRequestResponse.text()
+                                
+                                 const { CC5Response: statusResponse } = await parseStringPromise(
+                                   statusRequestResponseText,
+                                   {
+                                     explicitArray: false,
+                                    }
+                                  )
 
-    //   return res
-    //     .status(400)
-    //     .json({ message: preResponse.ErrMsg, status: preResponse.Response })
-    // }
-
-    // Postauthorization
-    // const postRequestPayload = `
-    //   <CC5Request>
-    //     <Name>pogo_api</Name>
-    //     <Password>Pogo_api2022</Password>
-    //     <ClientId>600003404</ClientId>
-    //     <Type>PostAuth</Type>
-    //     <OrderId>${preResponse.OrderId}</OrderId>
-    //   </CC5Request>
-    // `
-    // const postRequestResponse = await fetch(cmi_api, {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/xml",
-    //   },
-    //   body: preRequestPayload,
-    // })
-    // const postRequestResponseText = await postRequestResponse.text()
-
-    // const { CC5Response: postResponse } = await parseStringPromise(
-    //   postRequestResponseText,
-    //   {
-    //     explicitArray: false,
-    //   }
-    // )
-
-    // if (
-    //   postResponse.Response == "Declined" ||
-    //   postResponse.Response == "Error"
-    // ) {
-    //   await new Paiment({
-    //     emeteur: emeteur_id,
-    //     destinataire: recepteur_id,
-    //     cartebancaireEmeteur: emeteurCarte.id,
-    //     cartebancaireDestinataire: recepteurCarte.id,
-    //     montant: amount,
-    //     dateOperation: new Date(),
-    //     Etat_de_la_transaction: "échouer",
-    //     remarque: postResponse.ErrMsg,
-    //   }).save()
-    //   return res
-    //     .status(400)
-    //     .json({ message: postResponse.ErrMsg, status: postResponse.Response })
-    // }
-
-    // transaction reussite
-    const paiment = await new Paiment({
-      emeteur: emeteur_id,
-      destinataire: recepteur_id,
-      montant: amount,
-      dateOperation: new Date(),
-      Etat_de_la_transaction: "reussie",
-    }).save()
-
+                                  console.log(statusResponse)
+                                  if (statusResponse.Response == "Declined" || statusResponse.Response == "Error") {
+                                    paiment = await new Paiment({
+                                      emeteur: emeteur_id,
+                                      destinataire: recepteur[0]._id,
+                                      montant: amount,
+                                      dateOperation: new Date(),
+                                      Etat_de_la_transaction: "echouee",
+                                    }).save()
+                                    error= { message: postResponse.ErrMsg, status: postResponse.Response }
+                                  }else{
+                                    ////////////////////////////////////////////
+                                    // transaction reussite
+                                              paiment = await new Paiment({
+                                                emeteur: emeteur_id,
+                                                destinataire: recepteur[0]._id,
+                                                montant: amount,
+                                                dateOperation: new Date(),
+                                                Etat_de_la_transaction: "reussie",
+                                              }).save()
+                                  }
+                      }
+          }
+    
+    
     if(paiment){
-      let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur_id})
-      if(group.length==0)
-        await new GroupedPaiment({
+          let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur[0]._id})
+          if(group.length==0)
+            await new GroupedPaiment({
           total:paiment.Etat_de_la_transaction=="reussie"?paiment.montant:0,
-          destinataire:recepteur_id,
+          destinataire:recepteur[0]._id,
           paiments:[paiment]
         }).save()
-      else{
-        const montantBig = new BigNumber(paiment.montant.toString());
-        const totalBig = new BigNumber(group[0].total.toString());
-
-        // Add the BigNumber values
-        const sumBig = montantBig.plus(totalBig);
-
-        // Convert the result back to Decimal128
-        const sumDecimal = Types.Decimal128.fromString(sumBig.toString());
-        
-        paiment.Etat_de_la_transaction=="reussie"?group[0].total = sumDecimal:null;
+        else{
+          const montantBig = new BigNumber(paiment.montant.toString());
+          const totalBig = new BigNumber(group[0].total.toString());
+          
+          // Add the BigNumber values
+          const sumBig = montantBig.plus(totalBig);
+          
+          // Convert the result back to Decimal128
+          const sumDecimal = Types.Decimal128.fromString(sumBig.toString());
+          
+          paiment.Etat_de_la_transaction=="reussie"?group[0].total = sumDecimal:null;
         group[0].paiments.push(paiment)
         await group[0].save()
       }
     }
-
+    if(error) throw error
     return res.status(200).json({ message: "Paiment success" })
   } catch (error) {
     console.error(error.message)
@@ -352,7 +388,7 @@ router.post('/add-card', authenticateToken, async (req, res) => {
     const calculatedHashValue = crypto.createHash('sha512').update(hashval).digest('base64');
     // Render the form with calculated hash
     res.send(`
-        <form id="pay_form" name="pay_form" method="post" action="https://testpayment.cmi.co.ma/fim/est3Dgate">
+        <form id="pay_form" name="pay_form" method="post" action="https://payment.cmi.co.ma/fim/est3Dgate">
             ${postParams.map(param => `<input type="hidden" name="${param}" value="${req.body[param]}" />`).join('\n')}
             <input type="hidden" name="HASH" value="${calculatedHashValue}" /> here i am
         </form>
