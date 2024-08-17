@@ -18,9 +18,9 @@ const cartebancaireSchema = new Schema({
 const marchantSchema = new Schema({
   rib:{ type:String},
   nomMarchand: { type: String },
-  RC: { type: String },
-  IF: { type: String },
-  percent:{ type:Number,min:0,max:100}
+  RC: { type: String ,default:"RC-4245"},
+  IF: { type: String,default:"IF-123"},
+  percent:{ type:Number,min:0,max:100,default:2}
 })
 
 const utilisateurSchema = new Schema({
@@ -30,8 +30,9 @@ const utilisateurSchema = new Schema({
   telephone: { type: Number, required: true, unique: true },
   password: { type: String, required: true },
   cards: { type: [cartebancaireSchema], default: [] },
-  isBlocked:{type:Boolean, default:false},
-  marchandData:{type:marchantSchema,default:{}},
+  isBlocked:{ type:Boolean, default:false},
+  marchandData:{ type:marchantSchema, default:{}},
+  isMarchand:{ type:Boolean, default:true }
 },{timestamps:true})
 
 utilisateurSchema.pre('save', function (next) {
@@ -42,6 +43,16 @@ utilisateurSchema.pre('save', function (next) {
     utilisateur.cards[0].isdefault = true;
   }
 
+  // temporary
+  // Generate and set the rib value for marchantData
+  if (utilisateur.isMarchand && utilisateur.marchandData) {
+    // Ensure _id is available before setting rib
+    if (utilisateur._id) {
+      utilisateur.marchandData.rib = `${utilisateur._id}-${utilisateur.nom}`;
+      utilisateur.marchandData.nomMarchand = `Marchand-${utilisateur.nom}`;
+    }
+  }
+  
   next();
 });
 

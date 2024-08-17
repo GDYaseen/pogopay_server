@@ -24,7 +24,9 @@ router.post("/add-card/:idToUse", async (req,res)=>{
             console.log(e)
             return
         }
-        res.send("<h1>Card added Successfully</h1>")
+        res.send(`<body><h1>Card added Successfully! Redirecting...</h1><script>
+        let cardSaved=true
+        </script></body>`)
         return
     }
     res.status(500).json({message:"CMI error",status:'error'})

@@ -222,8 +222,8 @@ router.put("/update", authenticateToken, userValidator, async (req, res) => {
         .status(404)
         .json({ message: "Utilisateur non trouvé", status: "error" })
     }
-
-    res.json({ status: "success", message: "User updated successfully" })
+    
+    res.json({ status: "success", message: "User updated successfully",user:updatedUser })
   } catch (error) {
     console.error(error.message)
     res.status(500).json({ message: error.message, status: "error" })

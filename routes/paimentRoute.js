@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { authenticateToken } from "../middleware.js"
+import { authenticateDashboardToken, authenticateToken } from "../middleware.js"
 import { body, validationResult } from "express-validator"
 import { parseStringPromise } from "xml2js"
 import Utilisateur from "../models/utilisateur.js"
@@ -281,12 +281,71 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
 router.get("/historique", authenticateToken, async (req, res) => {
   try {
     const { id } = req.user
-    const historique = await Paiment.find({ emeteur: id })
-      .populate({
-        path: "destinataire",
-        select: ["nom", "prenom", "telephone", "marchandData"],
-      })
-      .exec()
+    const isEmeteur = req.query.isEmeteur;
+    const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+    const limit = parseInt(req.query.limit) || 20; // Default to 30 documents per page
+    const skip = (page - 1) * limit; // Calculate the number of documents to skip
+
+    const historique = await Paiment.aggregate([
+      {
+        $match: isEmeteur==undefined?
+          {$or:[{ emeteur: new Types.ObjectId(id) },{ destinataire: new Types.ObjectId(id) }],Etat_de_la_transaction:"reussie"}:
+          isEmeteur=="true"?{ emeteur: new Types.ObjectId(id) ,Etat_de_la_transaction:"reussie"}:{ destinataire: new Types.ObjectId(id) ,Etat_de_la_transaction:"reussie"},
+      },
+      {
+        $lookup: {
+          from: "utilisateurs", // The collection name for Utilisateur model
+          localField: "emeteur",
+          foreignField: "_id",
+          as: "emeteurDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "utilisateurs", // The collection name for Utilisateur model
+          localField: "destinataire",
+          foreignField: "_id",
+          as: "destinataireDetails",
+        },
+      },
+      {
+        $addFields: {
+          isEmeteur: { $eq: ["$emeteur", new Types.ObjectId(id)] },
+        },
+      },
+      {
+        $unwind: "$emeteurDetails",
+      },
+      {
+        $unwind: "$destinataireDetails",
+      },
+      {
+        $project: {
+          "emeteurDetails.nom": 1,
+          "emeteurDetails.prenom": 1,
+          "emeteurDetails.telephone": 1,
+          "emeteurDetails.marchandData": 1,
+          "destinataireDetails.nom": 1,
+          "destinataireDetails.prenom": 1,
+          "destinataireDetails.telephone": 1,
+          "destinataireDetails.marchandData": 1,
+          isEmeteur: 1,
+          dateOperation: 1,
+          montant: 1,
+          Etat_de_la_transaction: 1,
+        },
+      },
+      {
+        $sort: { dateOperation: -1 }, // Sort by dateOperation in descending order
+      },
+      {
+        $skip: skip, // Skip the first (page - 1) * limit documents
+      },
+      {
+        $limit: limit, // Limit the results to `limit` documents per page
+      },
+    ]);
+    // if(limit==1) console.log("have been requested",historique)
     res.status(200).json({ historique })
   } catch (error) {
     console.error(error.message)
@@ -324,7 +383,7 @@ router.get("/groupdetails/:id", async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" });
   }
 });
-router.get("/historique/:etat", async (req, res) => {
+router.get("/historique/:etat", authenticateDashboardToken,async (req, res) => {
   try {
     const { etat } = req.params;
     let statusFilter
