@@ -234,6 +234,10 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                   }else{
                                     ////////////////////////////////////////////
                                     // transaction reussite
+                                    console.log("normal new Date:",new Date())
+                                    console.log("response       :",new Date(statusResponse.AUTH_DTTM))
+
+
                                               paiment = await new Paiment({
                                                 emeteur: emeteur_id,
                                                 destinataire: recepteur[0]._id,
@@ -246,29 +250,29 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
           }
     
     
-    if(paiment){
-          let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur[0]._id})
-          if(group.length==0)
-            await new GroupedPaiment({
-          total:paiment.Etat_de_la_transaction=="reussie"?paiment.montant:0,
-          destinataire:recepteur[0]._id,
-          paiments:[paiment]
-        }).save()
-        else{
-          const montantBig = new BigNumber(paiment.montant.toString());
-          const totalBig = new BigNumber(group[0].total.toString());
+    // if(paiment){
+    //       let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur[0]._id})
+    //       if(group.length==0)
+    //         await new GroupedPaiment({
+    //       total:paiment.Etat_de_la_transaction=="reussie"?paiment.montant:0,
+    //       destinataire:recepteur[0]._id,
+    //       paiments:[paiment]
+    //     }).save()
+    //     else{
+    //       const montantBig = new BigNumber(paiment.montant.toString());
+    //       const totalBig = new BigNumber(group[0].total.toString());
           
-          // Add the BigNumber values
-          const sumBig = montantBig.plus(totalBig);
+    //       // Add the BigNumber values
+    //       const sumBig = montantBig.plus(totalBig);
           
-          // Convert the result back to Decimal128
-          const sumDecimal = Types.Decimal128.fromString(sumBig.toString());
+    //       // Convert the result back to Decimal128
+    //       const sumDecimal = Types.Decimal128.fromString(sumBig.toString());
           
-          paiment.Etat_de_la_transaction=="reussie"?group[0].total = sumDecimal:null;
-        group[0].paiments.push(paiment)
-        await group[0].save()
-      }
-    }
+    //       paiment.Etat_de_la_transaction=="reussie"?group[0].total = sumDecimal:null;
+    //     group[0].paiments.push(paiment)
+    //     await group[0].save()
+      // }
+    // }
     if(error) throw error
     return res.status(200).json({ message: "Paiment success" })
   } catch (error) {
