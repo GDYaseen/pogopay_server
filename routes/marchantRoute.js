@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { authenticateToken } from "../middleware.js"
+import { authenticateDashboardToken, authenticateToken } from "../middleware.js"
 import { body, param, validationResult } from "express-validator"
 import bcrypt from "bcrypt"
 // import Marchand from "../models/marchand.js"
@@ -25,7 +25,7 @@ const marchandValidator = [
   },
 ]
 
-router.get('/clients/search', async (req, res) => {
+router.get('/clients/search', authenticateDashboardToken, async (req, res) => {
   try {
     const query = req.query.query || '';
   
@@ -62,7 +62,7 @@ router.get('/clients/search', async (req, res) => {
     }
   });
 
-router.post("/addmarchand",marchandValidator, async (req,res)=>{
+router.post("/addmarchand",authenticateDashboardToken,marchandValidator, async (req,res)=>{
     try{
         const {user,logo,nomMarchand,RC,rib,IF,percent} = req.body
         let u = await Utilisateur.findById(user) 
@@ -80,7 +80,7 @@ router.post("/addmarchand",marchandValidator, async (req,res)=>{
     }
 })
 
-router.get("/list",async (req,res)=>{
+router.get("/list",authenticateDashboardToken,async (req,res)=>{
     try{
         const marchs = await Utilisateur.find({$or: [
           { "marchandData.nomMarchant": { $exists: true, $ne: "" } },
@@ -97,7 +97,7 @@ router.get("/list",async (req,res)=>{
 })
 
 
-router.put("/update/:id",async (req,res)=>{
+router.put("/update/:id",authenticateDashboardToken,async (req,res)=>{
     try{
         const {id} = req.params
         const {logo,nomMarchand,RC,rib,IF,percent} = req.body
@@ -108,7 +108,7 @@ router.put("/update/:id",async (req,res)=>{
         res.send(error.message)
     }
 })
-router.delete("/delete/:id",async (req,res)=>{
+router.delete("/delete/:id",authenticateDashboardToken,async (req,res)=>{
     try{
         const {id} = req.params
         let u = await Utilisateur.findById(id)

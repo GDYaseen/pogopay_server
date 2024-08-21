@@ -227,7 +227,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                       emeteur: emeteur_id,
                                       destinataire: recepteur[0]._id,
                                       montant: amount,
-                                      dateOperation: new Date(),
+                                      dateOperation: new Date(statusResponse.AUTH_DTTM),
                                       Etat_de_la_transaction: "echouee",
                                     }).save()
                                     error= { message: postResponse.ErrMsg, status: postResponse.Response }
@@ -238,7 +238,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                                 emeteur: emeteur_id,
                                                 destinataire: recepteur[0]._id,
                                                 montant: amount,
-                                                dateOperation: new Date(),
+                                                dateOperation: new Date(statusResponse.AUTH_DTTM),
                                                 Etat_de_la_transaction: "reussie",
                                               }).save()
                                   }
@@ -352,7 +352,7 @@ router.get("/historique", authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
-router.get("/groupdetails/:id", async (req, res) => {
+router.get("/groupdetails/:id",authenticateDashboardToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.query; // Get the status query parameter
@@ -415,7 +415,7 @@ router.get("/historique/:etat", authenticateDashboardToken,async (req, res) => {
 });
 
 
-router.put("/etat", async (req, res) => {
+router.put("/etat", authenticateDashboardToken,async (req, res) => {
   try {
     const { id, etat , codeVirement} = req.body
     await GroupedPaiment.findByIdAndUpdate(id, { status: etat ,codeVirement:codeVirement})

@@ -1,7 +1,7 @@
 import { Router } from "express"
 import Utilisateur from "../models/utilisateur.js"
 import Paiment from "../models/paiment.js"
-import { authenticateToken } from "../middleware.js"
+import { authenticateDashboardToken, authenticateToken } from "../middleware.js"
 import { body, param, validationResult } from "express-validator"
 import bcrypt from "bcrypt"
 const router = Router()
@@ -23,7 +23,27 @@ const userValidator = [
   },
 ]
 
-router.get("/list",async (req,res)=>{
+
+router.get("/total",authenticateDashboardToken,async (req,res)=>{
+  try{
+    const totalClients = await Utilisateur.countDocuments({});
+    const totalMarchands = await Utilisateur.countDocuments({ isMarchand: true });
+
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const usersCreatedThisMonth = await Utilisateur.countDocuments({ createdAt: { $gte: startOfMonth } });
+
+    res.json({
+      totalClients,
+      totalMarchands,
+      usersCreatedThisMonth,
+      status: "success"
+    });
+  }catch(error){
+    console.error(error)
+    res.status(500).json({ message: error.message, status: "error" })
+  }
+})
+router.get("/list",authenticateDashboardToken,async (req,res)=>{
   try {
     // const oneWeekAgo = new Date();
     // oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
@@ -85,7 +105,7 @@ router.get("/list",async (req,res)=>{
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
-router.put("/block/:id",async (req,res)=>{
+router.put("/block/:id",authenticateDashboardToken,async (req,res)=>{
   try{
     const {id} = req.params
     const {blockStatus} = req.body
@@ -105,7 +125,7 @@ router.put("/block/:id",async (req,res)=>{
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
-router.put("/update/:id", userValidator, async (req, res) => {
+router.put("/update/:id",authenticateDashboardToken, userValidator, async (req, res) => {
   const { id } = req.params
   const { nom, prenom, telephone } = req.body
   try {
@@ -131,7 +151,7 @@ router.put("/update/:id", userValidator, async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
-router.get("/paimentsbyUser/:id", async (req, res) => {
+router.get("/paimentsbyUser/:id", authenticateDashboardToken,async (req, res) => {
   try {
     const { id } = req.params
     const user = await Utilisateur.findById(id)
