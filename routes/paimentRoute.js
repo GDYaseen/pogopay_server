@@ -235,8 +235,9 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                     ////////////////////////////////////////////
                                     // transaction reussite
                                     console.log("normal new Date:",new Date())
+                                    console.log("auth_dttm: ",statusResponse.AUTH_DTTM)
                                     console.log("response       :",new Date(statusResponse.AUTH_DTTM))
-
+                                    console.log("This is the full response: ",statusResponse)
 
                                               paiment = await new Paiment({
                                                 emeteur: emeteur_id,
