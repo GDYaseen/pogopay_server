@@ -227,7 +227,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                       emeteur: emeteur_id,
                                       destinataire: recepteur[0]._id,
                                       montant: amount,
-                                      dateOperation: new Date(statusResponse.AUTH_DTTM),
+                                      dateOperation: new Date(statusResponse.Extra.AUTH_DTTM),
                                       Etat_de_la_transaction: "echouee",
                                     }).save()
                                     error= { message: postResponse.ErrMsg, status: postResponse.Response }
@@ -235,15 +235,15 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                     ////////////////////////////////////////////
                                     // transaction reussite
                                     console.log("normal new Date:",new Date())
-                                    console.log("auth_dttm: ",statusResponse.AUTH_DTTM)
-                                    console.log("response       :",new Date(statusResponse.AUTH_DTTM))
+                                    console.log("auth_dttm: ",statusResponse.Extra.AUTH_DTTM)
+                                    console.log("response       :",new Date(statusResponse.Extra.AUTH_DTTM))
                                     console.log("This is the full response: ",statusResponse)
 
                                               paiment = await new Paiment({
                                                 emeteur: emeteur_id,
                                                 destinataire: recepteur[0]._id,
                                                 montant: amount,
-                                                dateOperation: new Date(statusResponse.AUTH_DTTM),
+                                                dateOperation: new Date(statusResponse.Extra.AUTH_DTTM),
                                                 Etat_de_la_transaction: "reussie",
                                               }).save()
                                   }
