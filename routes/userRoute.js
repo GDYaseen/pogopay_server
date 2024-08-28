@@ -23,26 +23,6 @@ const userValidator = [
   },
 ]
 
-
-router.get("/total",authenticateDashboardToken,async (req,res)=>{
-  try{
-    const totalClients = await Utilisateur.countDocuments({});
-    const totalMarchands = await Utilisateur.countDocuments({ isMarchand: true });
-
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const usersCreatedThisMonth = await Utilisateur.countDocuments({ createdAt: { $gte: startOfMonth } });
-
-    res.json({
-      totalClients,
-      totalMarchands,
-      usersCreatedThisMonth,
-      status: "success"
-    });
-  }catch(error){
-    console.error(error)
-    res.status(500).json({ message: error.message, status: "error" })
-  }
-})
 router.get("/list",authenticateDashboardToken,async (req,res)=>{
   try {
     // const oneWeekAgo = new Date();

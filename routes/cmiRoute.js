@@ -12,7 +12,7 @@ router.post("/addcardgateway",async (req,res)=>{
         res.status(400).send("Id not sent")
         return
     }
-    console.log("from addcardgateway: ",req.body.idToUse)
+    // console.log("from addcardgateway: ",req.body.idToUse)
     const postData = {
         clientid: process.env.CLIENTID,
         amount: "1.00",

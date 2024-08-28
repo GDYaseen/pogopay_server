@@ -64,7 +64,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
   try {
     const { amount, target_rib} = req.body
     const { id: emeteur_id } = req.user
-    console.log(amount,target_rib,emeteur_id)
+    // console.log(amount,target_rib,emeteur_id)
     // recuperatoin des informations nécessaire
     const emeteur = await Utilisateur.findById(emeteur_id)
     // .select(
@@ -143,7 +143,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
         explicitArray: false,
       }
     )
-    console.log(preResponse)
+    // console.log(preResponse)
     let paiment
     if (preResponse.Response == "Declined" || preResponse.Response == "Error") {
       const pretrxDate = `${preResponse.Extra.TRXDATE.substring(0, 4)}-${preResponse.Extra.TRXDATE.substring(4, 6)}-${preResponse.Extra.TRXDATE.substring(6, 8)} ${preResponse.Extra.TRXDATE.substring(9)}`
@@ -183,7 +183,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                   }
                 )
               
-                console.log(postResponse)
+                // console.log(postResponse)
               
                 if (postResponse.Response == "Declined" || postResponse.Response == "Error") {
                   const trxDate = `${postResponse.Extra.TRXDATE.substring(0, 4)}-${postResponse.Extra.TRXDATE.substring(4, 6)}-${postResponse.Extra.TRXDATE.substring(6, 8)} ${postResponse.Extra.TRXDATE.substring(9)}`
@@ -223,7 +223,7 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
                                     }
                                   )
 
-                                  console.log(statusResponse)
+                                  // console.log(statusResponse)
                                   if (statusResponse.Response == "Declined" || statusResponse.Response == "Error") {
                                     paiment = await new Paiment({
                                       emeteur: emeteur_id,
@@ -354,20 +354,15 @@ router.get("/historique", authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
-router.get("/groupdetails/:id",authenticateDashboardToken, async (req, res) => {
+router.get("/groupdetails/:id"/*, authenticateDashboardToken*/, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.query; // Get the status query parameter
 
-    // Build the filter based on the status parameter
-    let paimentFilter = {};
-    if (status) {
-      paimentFilter = { "Etat_de_la_transaction": status };
-    }
-    let paiments = await GroupedPaiment.findById(id)
+    // Step 1: Fetch all paiments for counting
+    let allPaiments = await GroupedPaiment.findById(id)
       .populate({
         path: "paiments",
-        match:paimentFilter,
         populate: {
           path: "emeteur",
           select: ["nom", "prenom", "telephone"]
@@ -376,15 +371,27 @@ router.get("/groupdetails/:id",authenticateDashboardToken, async (req, res) => {
       .populate({
         path: "destinataire",
         select: ["nom", "prenom", "telephone", "marchandData"],
-      })
+      }).lean()
       .exec();
 
-    res.send(paiments);
+    const reussieCount = allPaiments.paiments.filter((t) => t.Etat_de_la_transaction === "reussie").length;
+    const echoueeCount = allPaiments.paiments.filter((t) => t.Etat_de_la_transaction === "echouee").length;
+
+    let filteredPaiments = allPaiments;
+    if (status) {
+      filteredPaiments.paiments = allPaiments.paiments.filter((t) => t.Etat_de_la_transaction === status);
+    }
+
+    filteredPaiments.reussieCount = reussieCount;
+    filteredPaiments.echoueeCount = echoueeCount;
+
+    res.send(filteredPaiments);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: error.message, status: "error" });
   }
 });
+
 router.get("/historique/:etat", authenticateDashboardToken,async (req, res) => {
   try {
     const { etat } = req.params;

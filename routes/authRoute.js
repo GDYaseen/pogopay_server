@@ -102,7 +102,7 @@ const registreValidator = [
 
 router.post("/registre", registreValidator, async (req, res) => {
   try {
-    console.log(req.body)
+    // console.log(req.body)
     const { nom, prenom, telephone, password} = req.body
     const cryptedPassword = await bcrypt.hash(password, 10)
     const user = await new Utilisateur({

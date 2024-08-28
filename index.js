@@ -10,6 +10,7 @@ import CarteRouter from "./routes/carteRoute.js"
 import CMIRouter from "./routes/cmiRoute.js"
 import cors from "cors"
 import MarchantRoute from "./routes/marchantRoute.js"
+import StatisticsRoute from "./routes/statisticsRoute.js"
 
 
 
@@ -18,7 +19,7 @@ import MarchantRoute from "./routes/marchantRoute.js"
 const app = express()
 const port = 3000
 
-app.use(cors({ origin: "*" }))
+app.use(cors({ origin: "*" }))//might be modified later to better handle access rights
 
 // https configuration
 //  const privateKey = fs.readFileSync("localhost.decrypted.key")
@@ -47,6 +48,7 @@ app.use("/paiment", PaimentRouter)
 app.use("/carte", CarteRouter)
 app.use("/cmi", CMIRouter)
 app.use("/marchand", MarchantRoute)
+app.use("/statistics",StatisticsRoute)
 
 dbConnect()
 .then(() => console.log("MongoDB connected"))
