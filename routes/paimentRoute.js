@@ -18,7 +18,7 @@ config()
 router.get("/facturer/:id",async (req,res)=>{
   try {
       const { id } = req.params;
-      
+      console.log(id)
       let paiments = await GroupedPaiment.findById(id)
         .populate({
           path: "paiments",
@@ -29,15 +29,16 @@ router.get("/facturer/:id",async (req,res)=>{
         })
         .populate({
           path: "destinataire",
-          select: ["nom", "prenom", "telephone", "safeToken"],
+          select: ["nom", "prenom", "telephone", "marchandData","photo"],
         })
         .exec();
   
     const pdfBuffer = generateFacture(paiments)
 
-    // res.setHeader('Content-Disposition', 'attachment; filename="document.pdf"');
-    res.setHeader('Content-Type', 'application/pdf').send(pdfBuffer);
-
+    console.log("sending")
+    res.setHeader('Content-Disposition', 'inline; filename="document.pdf"'); // Use inline for previewing
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(pdfBuffer);
   } catch (error) {
     console.error('Error creating PDF:', error);
     res.status(500).send('Internal Server Error');
@@ -101,155 +102,164 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
       console.log({ message: "Carte bancaire non trouvée" })
       return res.status(404).json({ message: "Carte bancaire non trouvée" })
     }
-    // formatage de la date d'expiration
-    // const expirationDate = new Date(dateExperation)
-    // const month = String(expirationDate.getMonth() + 1).padStart(2, "0") // Adding 1 as getMonth() returns 0-indexed month
-    // const year = expirationDate.getFullYear()
 
-    // const formattedExpirationDate = `${month}/${year}`
-
-    // const cmi_api = "https://testpayment.cmi.co.ma/fim/api"
-
-
-    let error = null
-    // // Preauthorization
-    const preRequestPayload = `
-      <CC5Request>
-        <Name>${process.env.CMI_API_NAME}</Name>
-        <Password>${process.env.CMI_API_PASS}</Password>
-        <ClientId>${process.env.CLIENTID2}</ClientId>
-        <Type>PreAuth</Type>
-        <Total>${amount}</Total>
-        <Currency>504</Currency>
-        <Extra>
-				<G${process.env.MERCHANTGROUPID}>${defaultCard.safeToken}</G${process.env.MERCHANTGROUPID}>
-                <MERCHANTSAFELABEL>${defaultCard.cardLabel}</MERCHANTSAFELABEL>
-			  </Extra>
-      </CC5Request>
-    `
-    const preRequestResponse = await fetch(process.env.CMIURL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/xml",
-      },
-      body: preRequestPayload,
-    })
-
-    const preRequestResponseText = await preRequestResponse.text()
-
-    const { CC5Response: preResponse } = await parseStringPromise(
-      preRequestResponseText,
-      {
-        explicitArray: false,
-      }
-    )
-    // console.log(preResponse)
     let paiment
-    if (preResponse.Response == "Declined" || preResponse.Response == "Error") {
-      const pretrxDate = `${preResponse.Extra.TRXDATE.substring(0, 4)}-${preResponse.Extra.TRXDATE.substring(4, 6)}-${preResponse.Extra.TRXDATE.substring(6, 8)} ${preResponse.Extra.TRXDATE.substring(9)}`
-        paiment = await new Paiment({
-          emeteur: emeteur_id,
-          destinataire: recepteur[0]._id,
-          montant: amount,
-          dateOperation: new Date(pretrxDate),
-          Etat_de_la_transaction: "echouee",
-        }).save()
+    let error = null
 
-      error={ message: preResponse.ErrMsg, status: preResponse.Response }
-    }else{
-          // Postauthorization
-                const postRequestPayload = `
-                  <CC5Request>
-                    <Name>${process.env.CMI_API_NAME}</Name>
-                    <Password>${process.env.CMI_API_PASS}</Password>
-                    <ClientId>${process.env.CLIENTID2}</ClientId>
-                    <Type>PostAuth</Type>
-                    <OrderId>${preResponse.OrderId}</OrderId>
-                  </CC5Request>
-                `
-                const postRequestResponse = await fetch(process.env.CMIURL, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/xml",
-                  },
-                  body: postRequestPayload,
-                })
-                const postRequestResponseText = await postRequestResponse.text()
+// // #region CMI PREAUTH, POSTAUTH and ORDERSTATUS
+
+
+//     // // Preauthorization
+//     const preRequestPayload = `
+//       <CC5Request>
+//         <Name>${process.env.CMI_API_NAME}</Name>
+//         <Password>${process.env.CMI_API_PASS}</Password>
+//         <ClientId>${process.env.CLIENTID2}</ClientId>
+//         <Type>PreAuth</Type>
+//         <Total>${amount}</Total>
+//         <Currency>504</Currency>
+//         <Extra>
+// 				<G${process.env.MERCHANTGROUPID}>${defaultCard.safeToken}</G${process.env.MERCHANTGROUPID}>
+//                 <MERCHANTSAFELABEL>${defaultCard.cardLabel}</MERCHANTSAFELABEL>
+// 			  </Extra>
+//       </CC5Request>
+//     `
+//     const preRequestResponse = await fetch(process.env.CMIURL, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/xml",
+//       },
+//       body: preRequestPayload,
+//     })
+
+//     const preRequestResponseText = await preRequestResponse.text()
+
+//     const { CC5Response: preResponse } = await parseStringPromise(
+//       preRequestResponseText,
+//       {
+//         explicitArray: false,
+//       }
+//     )
+    
+
+//     if (preResponse.Response == "Declined" || preResponse.Response == "Error") {
+//       const pretrxDate = `${preResponse.Extra.TRXDATE.substring(0, 4)}-${preResponse.Extra.TRXDATE.substring(4, 6)}-${preResponse.Extra.TRXDATE.substring(6, 8)} ${preResponse.Extra.TRXDATE.substring(9)}`
+//         paiment = await new Paiment({
+//           emeteur: emeteur_id,
+//           destinataire: recepteur[0]._id,
+//           montant: amount,
+//           dateOperation: new Date(pretrxDate),
+//           Etat_de_la_transaction: "echouee",
+//         }).save()
+
+//       error={ message: preResponse.ErrMsg, status: preResponse.Response }
+//     }else{
+//           // Postauthorization
+//                 const postRequestPayload = `
+//                   <CC5Request>
+//                     <Name>${process.env.CMI_API_NAME}</Name>
+//                     <Password>${process.env.CMI_API_PASS}</Password>
+//                     <ClientId>${process.env.CLIENTID2}</ClientId>
+//                     <Type>PostAuth</Type>
+//                     <OrderId>${preResponse.OrderId}</OrderId>
+//                   </CC5Request>
+//                 `
+//                 const postRequestResponse = await fetch(process.env.CMIURL, {
+//                   method: "POST",
+//                   headers: {
+//                     "Content-Type": "application/xml",
+//                   },
+//                   body: postRequestPayload,
+//                 })
+//                 const postRequestResponseText = await postRequestResponse.text()
               
-                const { CC5Response: postResponse } = await parseStringPromise(
-                  postRequestResponseText,
-                  {
-                    explicitArray: false,
-                  }
-                )
+//                 const { CC5Response: postResponse } = await parseStringPromise(
+//                   postRequestResponseText,
+//                   {
+//                     explicitArray: false,
+//                   }
+//                 )
               
-                // console.log(postResponse)
+//                 // console.log(postResponse)
               
-                if (postResponse.Response == "Declined" || postResponse.Response == "Error") {
-                  const trxDate = `${postResponse.Extra.TRXDATE.substring(0, 4)}-${postResponse.Extra.TRXDATE.substring(4, 6)}-${postResponse.Extra.TRXDATE.substring(6, 8)} ${postResponse.Extra.TRXDATE.substring(9)}`
-                  paiment = await new Paiment({
-                    emeteur: emeteur_id,
-                    destinataire: recepteur[0]._id,
-                    montant: amount,
-                    dateOperation: new Date(trxDate),
-                    Etat_de_la_transaction: "echouee",
-                  }).save()
-                    error={ message: postResponse.ErrMsg, status: postResponse.Response }
-                }else{  
-                            const statusRequestPayload = `
-                                   <CC5Request>
-                                   <Name>${process.env.CMI_API_NAME}</Name>
-                                   <Password>${process.env.CMI_API_PASS}</Password>
-                                   <ClientId>${process.env.CLIENTID2}</ClientId>
-                                   <OrderId>${preResponse.OrderId}</OrderId>
-                                   <Extra>
-                                   <ORDERSTATUS>QUERY</ORDERSTATUS>
-                               	    </Extra>
-                                     </CC5Request>
-                                     `
-                                     const statusRequestResponse = await fetch(process.env.CMIURL, {
-                                       method: "POST",
-                                       headers: {
-                                         "Content-Type": "application/xml",
-                                        },
-                                   body: statusRequestPayload,
-                                  })
-                                 const statusRequestResponseText = await statusRequestResponse.text()
+//                 if (postResponse.Response == "Declined" || postResponse.Response == "Error") {
+//                   const trxDate = `${postResponse.Extra.TRXDATE.substring(0, 4)}-${postResponse.Extra.TRXDATE.substring(4, 6)}-${postResponse.Extra.TRXDATE.substring(6, 8)} ${postResponse.Extra.TRXDATE.substring(9)}`
+//                   paiment = await new Paiment({
+//                     emeteur: emeteur_id,
+//                     destinataire: recepteur[0]._id,
+//                     montant: amount,
+//                     dateOperation: new Date(trxDate),
+//                     Etat_de_la_transaction: "echouee",
+//                   }).save()
+//                     error={ message: postResponse.ErrMsg, status: postResponse.Response }
+//                 }else{  
+//                             const statusRequestPayload = `
+//                                    <CC5Request>
+//                                    <Name>${process.env.CMI_API_NAME}</Name>
+//                                    <Password>${process.env.CMI_API_PASS}</Password>
+//                                    <ClientId>${process.env.CLIENTID2}</ClientId>
+//                                    <OrderId>${preResponse.OrderId}</OrderId>
+//                                    <Extra>
+//                                    <ORDERSTATUS>QUERY</ORDERSTATUS>
+//                                	    </Extra>
+//                                      </CC5Request>
+//                                      `
+//                                      const statusRequestResponse = await fetch(process.env.CMIURL, {
+//                                        method: "POST",
+//                                        headers: {
+//                                          "Content-Type": "application/xml",
+//                                         },
+//                                    body: statusRequestPayload,
+//                                   })
+//                                  const statusRequestResponseText = await statusRequestResponse.text()
                                 
-                                 const { CC5Response: statusResponse } = await parseStringPromise(
-                                   statusRequestResponseText,
-                                   {
-                                     explicitArray: false,
-                                    }
-                                  )
+//                                  const { CC5Response: statusResponse } = await parseStringPromise(
+//                                    statusRequestResponseText,
+//                                    {
+//                                      explicitArray: false,
+//                                     }
+//                                   )
 
-                                  // console.log(statusResponse)
-                                  if (statusResponse.Response == "Declined" || statusResponse.Response == "Error") {
-                                    paiment = await new Paiment({
-                                      emeteur: emeteur_id,
-                                      destinataire: recepteur[0]._id,
-                                      montant: amount,
-                                      dateOperation: new Date(statusResponse.Extra.AUTH_DTTM),
-                                      Etat_de_la_transaction: "echouee",
-                                    }).save()
-                                    error= { message: postResponse.ErrMsg, status: postResponse.Response }
-                                  }else{
-                                    ////////////////////////////////////////////
-                                    // transaction reussite
-                                              paiment = await new Paiment({
-                                                emeteur: emeteur_id,
-                                                destinataire: recepteur[0]._id,
-                                                montant: amount,
-                                                dateOperation: new Date(statusResponse.Extra.AUTH_DTTM),
-                                                Etat_de_la_transaction: "reussie",
-                                              }).save()
-                                  }
-                      }
-          }
+//                                   // console.log(statusResponse)
+//                                   if (statusResponse.Response == "Declined" || statusResponse.Response == "Error") {
+//                                     paiment = await new Paiment({
+//                                       emeteur: emeteur_id,
+//                                       destinataire: recepteur[0]._id,
+//                                       montant: amount,
+//                                       dateOperation: new Date(statusResponse.Extra.AUTH_DTTM),
+//                                       Etat_de_la_transaction: "echouee",
+//                                     }).save()
+//                                     error= { message: postResponse.ErrMsg, status: postResponse.Response }
+//                                   }else{
+//                                     ////////////////////////////////////////////
+//                                     // transaction reussite
+//                                               paiment = await new Paiment({
+//                                                 emeteur: emeteur_id,
+//                                                 destinataire: recepteur[0]._id,
+//                                                 montant: amount,
+//                                                 dateOperation: new Date(statusResponse.Extra.AUTH_DTTM),
+//                                                 Etat_de_la_transaction: "reussie",
+//                                               }).save()
+//                                   }
+//                       }
+//           }
+//     // #endregion
     
-    
+
+//temporary
+paiment = await new Paiment({
+  emeteur: emeteur_id,
+  destinataire: recepteur[0]._id,
+  montant: amount,
+  dateOperation: new Date(),
+  Etat_de_la_transaction: "reussie",
+}).save()
+
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
     if(paiment){
-          let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur[0]._id})
+          let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur[0]._id,createdAt: { $gt: startOfToday }})
           if(group.length==0)
             await new GroupedPaiment({
           total:paiment.Etat_de_la_transaction=="reussie"?paiment.montant:0,
@@ -279,6 +289,15 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
   }
 })
 
+
+
+
+
+
+
+
+
+
 // historique
 router.get("/historique", authenticateToken, async (req, res) => {
   try {
@@ -287,6 +306,82 @@ router.get("/historique", authenticateToken, async (req, res) => {
     const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
     const limit = parseInt(req.query.limit) || 20; // Default to 30 documents per page
     const skip = (page - 1) * limit; // Calculate the number of documents to skip
+
+    if(isEmeteur=='false' && isEmeteur!=undefined){
+      const historique = await GroupedPaiment.aggregate([
+        {
+          $match: { destinataire: new Types.ObjectId(id)},
+        },{
+          $lookup: {
+            from: "paiments", // The collection name for Utilisateur model
+            localField: "paiments",
+            foreignField: "_id",
+            as: "paimentsList",
+          },
+        },
+        {
+          $unwind: "$paimentsList", // Unwind paimentsList to work with each paiment individually
+        },
+        {
+          $lookup: {
+            from: "utilisateurs", // Lookup the emeteur details for each paiment
+            localField: "paimentsList.emeteur",
+            foreignField: "_id",
+            as: "paimentsList.emeteurDetails",
+          },
+        },
+        {
+          $unwind: "$paimentsList.emeteurDetails", // Unwind emeteurDetails to ensure it's a single object
+        }, {
+          $group: {
+            _id: "$_id",
+            total: { $first: "$total" },
+            status: { $first: "$status" },
+            codeVirement: { $first: "$codeVirement" },
+            createdAt: { $first: "$createdAt" },
+            destinataire: { $first: "$destinataire" },
+            paimentsList: {
+              $push: {
+                _id: "$paimentsList._id",
+                dateOperation: "$paimentsList.dateOperation",
+                montant: "$paimentsList.montant",
+                Etat_de_la_transaction: "$paimentsList.Etat_de_la_transaction",
+                emeteurDetails: "$paimentsList.emeteurDetails",
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            "paimentsList._id": 1,
+            "paimentsList.dateOperation": 1,
+            "paimentsList.montant": 1,
+            "paimentsList.Etat_de_la_transaction": 1,
+            "paimentsList.emeteurDetails.nom": 1,
+            "paimentsList.emeteurDetails.prenom": 1,
+            "paimentsList.emeteurDetails.telephone": 1,
+            "paimentsList.emeteurDetails.marchandData": 1,
+            createdAt: 1,
+            total: 1,
+            codeVirement: 1,
+            status: 1,
+          },
+        },
+        {
+          $sort: { createdAt: -1 }, // Sort by dateOperation in descending order
+        },
+        {
+          $skip: skip, // Skip the first (page - 1) * limit documents
+        },
+        {
+          $limit: limit, // Limit the results to `limit` documents per page
+        },
+      ])
+
+      const destinataire = await Utilisateur.findById(id)
+      res.status(200).json({isEmeteur:false,destinataire,historique})
+      return
+    }
 
     const historique = await Paiment.aggregate([
       {
@@ -331,7 +426,6 @@ router.get("/historique", authenticateToken, async (req, res) => {
           "destinataireDetails.prenom": 1,
           "destinataireDetails.telephone": 1,
           "destinataireDetails.marchandData": 1,
-          isEmeteur: 1,
           dateOperation: 1,
           montant: 1,
           Etat_de_la_transaction: 1,
@@ -354,6 +448,18 @@ router.get("/historique", authenticateToken, async (req, res) => {
     res.status(500).json({ message: error.message, status: "error" })
   }
 })
+
+
+
+
+
+
+
+
+
+
+
+
 router.get("/groupdetails/:id"/*, authenticateDashboardToken*/, async (req, res) => {
   try {
     const { id } = req.params;
