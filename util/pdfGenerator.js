@@ -46,7 +46,7 @@ function generateFacture(body){
         
         // Add header
         if(body.destinataire.photo!=null && body.destinataire.photo!="" && body.destinataire.photo!=undefined){
-          doc.addImage(body.destinataire.photo,'PNG', data.settings.margin.left, 10, 60, 18)
+          doc.addImage(body.destinataire.photo,'PNG', data.settings.margin.left, 10, 60, 18,undefined,"FAST")
         }else{
           doc.setFillColor(198, 198, 198); 
           doc.rect(data.settings.margin.left, 10,80,18,'F')
@@ -56,11 +56,11 @@ function generateFacture(body){
         }
         // console.log(merchantLogo)
 
-        doc.addImage(logo.toString('base64'),'PNG', doc.internal.pageSize.width-60, 10, 50, 15)
+        doc.addImage(logo.toString('base64'),'PNG', doc.internal.pageSize.width-60, 10, 50, 15,undefined,"FAST")
         doc.setFontSize(10);
         if(pageNumber==1){
-            doc.addImage("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIQAAACECAYAAABRRIOnAAAAAklEQVR4AewaftIAAAOTSURBVO3BQY4jRwADwWRB//9yeg8+8FSA0NJg1mZE/IOZfx1mymGmHGbKYaYcZsphphxmymGmHGbKYaYcZsphphxmymGmHGbKi4eS8JNUfpMkNJWWhJ+k8sRhphxmymGmvPgwlU9KwjuS0FTekYSm0pLwhMonJeGTDjPlMFMOM+XFlyXhHSrvSEJTuUnCjco7VJ5IwjtUvukwUw4z5TBTXvzPqNwkoancJKGp/M0OM+UwUw4z5cX/TBKaSlNpSWgq/2WHmXKYKYeZ8uLLVH4TlSeS0FSeUPlNDjPlMFMOM+XFhyXhN0lCU2lJaCo3Ki0JTeUmCb/ZYaYcZsphpsQ/+Isl4Ublm5LQVP5mh5lymCmHmfLioSQ0lZaET1JpKjdJ+CaVmyR8kso3HWbKYaYcZkr8gweS8A6VloQblZskNJV3JKGpvCMJTeUmCU2lJaGp/KTDTDnMlMNMefHLqLQkNJWmcpOEpvJEEprKTRJuknCThHeoPHGYKYeZcpgpLz5M5SYJN0loKjdJuFFpSXhHEprKTRJuVH6zw0w5zJTDTIl/8EASmso7kvCESkvCO1RaEppKS8KNSkvCT1J54jBTDjPlMFNefFkSmso7VFoSWhKaSktCU2lJaCotCU3lJglN5R1JaCotCU3lkw4z5TBTDjPlxZep3KjcJKGptCQ8odKScJOEptJU3pGEpnKj0pLQVJ44zJTDTDnMlBdfloQnVG5UnkhCU2lJaCotCU2lJaGpNJWWhKZyo/JJh5lymCmHmfLiy1TekYSWhKZyk4QnktBUWhJuknCThBuVloR3qDxxmCmHmXKYKfEP/mJJeIfKTRJuVFoSmso7knCj0pLQVD7pMFMOM+UwU148lISfpNJUWhKaSkvCjconJaGpvCMJTaUloak8cZgph5lymCkvPkzlk5Jwk4Sm0pJwo3KThCdUnlD5SYeZcpgph5ny4suS8A6VJ5LQVFoSWhI+KQlPqLQkNJWm8kmHmXKYKYeZ8uI/RuVGpSWhqdwkoancJOEJlZaEG5UnDjPlMFMOM+XFf0wSblSaSkvCjcpNEprKO5LQVJpKS8InHWbKYaYcZsqLL1P5JpWbJLxD5SYJNyotCX+Tw0w5zJTDTHnxYUn4SUloKk3lHUloKk3lHSpPJOEnHWbKYaYcZkr8g5l/HWbKYaYcZsphphxmymGmHGbKYaYcZsphphxmymGmHGbKYaYcZso/ZZOk/YG7ORYAAAAASUVORK5CYII=",'PNG', doc.internal.pageSize.width-30, 45, 20, 20)
-            doc.addImage(defaultMerchant.toString('base64'),'PNG', data.settings.margin.left, 37, 20, 20)
+            doc.addImage("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIQAAACECAYAAABRRIOnAAAAAklEQVR4AewaftIAAAOTSURBVO3BQY4jRwADwWRB//9yeg8+8FSA0NJg1mZE/IOZfx1mymGmHGbKYaYcZsphphxmymGmHGbKYaYcZsphphxmymGmHGbKi4eS8JNUfpMkNJWWhJ+k8sRhphxmymGmvPgwlU9KwjuS0FTekYSm0pLwhMonJeGTDjPlMFMOM+XFlyXhHSrvSEJTuUnCjco7VJ5IwjtUvukwUw4z5TBTXvzPqNwkoancJKGp/M0OM+UwUw4z5cX/TBKaSlNpSWgq/2WHmXKYKYeZ8uLLVH4TlSeS0FSeUPlNDjPlMFMOM+XFhyXhN0lCU2lJaCo3Ki0JTeUmCb/ZYaYcZsphpsQ/+Isl4Ublm5LQVP5mh5lymCmHmfLioSQ0lZaET1JpKjdJ+CaVmyR8kso3HWbKYaYcZkr8gweS8A6VloQblZskNJV3JKGpvCMJTeUmCU2lJaGp/KTDTDnMlMNMefHLqLQkNJWmcpOEpvJEEprKTRJuknCThHeoPHGYKYeZcpgpLz5M5SYJN0loKjdJuFFpSXhHEprKTRJuVH6zw0w5zJTDTIl/8EASmso7kvCESkvCO1RaEppKS8KNSkvCT1J54jBTDjPlMFNefFkSmso7VFoSWhKaSktCU2lJaCotCU3lJglN5R1JaCotCU3lkw4z5TBTDjPlxZep3KjcJKGptCQ8odKScJOEptJU3pGEpnKj0pLQVJ44zJTDTDnMlBdfloQnVG5UnkhCU2lJaCotCU2lJaGpNJWWhKZyo/JJh5lymCmHmfLiy1TekYSWhKZyk4QnktBUWhJuknCThBuVloR3qDxxmCmHmXKYKfEP/mJJeIfKTRJuVFoSmso7knCj0pLQVD7pMFMOM+UwU148lISfpNJUWhKaSkvCjconJaGpvCMJTaUloak8cZgph5lymCkvPkzlk5Jwk4Sm0pJwo3KThCdUnlD5SYeZcpgph5ny4suS8A6VJ5LQVFoSWhI+KQlPqLQkNJWm8kmHmXKYKYeZ8uI/RuVGpSWhqdwkoancJOEJlZaEG5UnDjPlMFMOM+XFf0wSblSaSkvCjcpNEprKO5LQVJpKS8InHWbKYaYcZsqLL1P5JpWbJLxD5SYJNyotCX+Tw0w5zJTDTHnxYUn4SUloKk3lHUloKk3lHSpPJOEnHWbKYaYcZkr8g5l/HWbKYaYcZsphphxmymGmHGbKYaYcZsphphxmymGmHGbKYaYcZso/ZZOk/YG7ORYAAAAASUVORK5CYII=",'PNG', doc.internal.pageSize.width-30, 45, 20, 20,undefined,"FAST")
+            doc.addImage(defaultMerchant.toString('base64'),'PNG', data.settings.margin.left, 37, 20, 20,undefined,"FAST")
             doc.text('Marchand: '+body.destinataire.marchandData.nomMarchand, data.settings.margin.left*3, 40);
             doc.text('RC: '+body.destinataire.marchandData.RC, data.settings.margin.left*3, 45);
             doc.text('IF: '+body.destinataire.marchandData.IF, data.settings.margin.left*3, 50);
