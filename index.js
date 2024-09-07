@@ -6,6 +6,7 @@ import AuthRouter from "./routes/authRoute.js"
 import StaffAuthRouter from "./routes/staffAuthRoute.js"
 import UserRouter from "./routes/userRoute.js"
 import PaimentRouter from "./routes/paimentRoute.js"
+import GroupedPaimentRouter from "./routes/groupedPaimentRoute.js"
 import CarteRouter from "./routes/carteRoute.js"
 import CMIRouter from "./routes/cmiRoute.js"
 import cors from "cors"
@@ -45,6 +46,7 @@ app.use("/auth", AuthRouter)
 app.use("/dashboardauth", StaffAuthRouter)
 app.use("/user", UserRouter)
 app.use("/paiment", PaimentRouter)
+app.use("/groupedpaiment", GroupedPaimentRouter)
 app.use("/carte", CarteRouter)
 app.use("/cmi", CMIRouter)
 app.use("/marchand", MarchantRoute)

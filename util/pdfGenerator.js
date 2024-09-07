@@ -45,7 +45,7 @@ async function generateFacture(body,id){
         const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
         
         // Add header
-        if(body.destinataire.photo!=null && body.destinataire.photo!="" && body.destinataire.photo!=undefined){
+        if(body.destinataire.photo!=null && body.destinataire.photo!="" && body.destinataire.photo!=undefined && body.destinataire.photo!="N/A"){
           doc.addImage(body.destinataire.photo,'PNG', data.settings.margin.left, 10, 60, 18,undefined,"FAST")
         }else{
           doc.setFillColor(198, 198, 198); 
