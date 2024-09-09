@@ -232,12 +232,12 @@ router.post("/", authenticateToken, paimentValidator, async (req, res) => {
           let group = await GroupedPaiment.find({status:"en cours",destinataire:recepteur[0]._id,createdAt: { $gt: startOfToday }})
           if(group.length==0)
             await new GroupedPaiment({
-          total:paiment.Etat_de_la_transaction=="reussie"?(paiment.montant*100/(100+5)):0,//ask about the percent later
+          total:paiment.Etat_de_la_transaction=="reussie"?(paiment.montant*100/(100+2.2+recepteur[0].marchandData.percent)).toFixed(2):0,
           destinataire:recepteur[0]._id,
           paiments:[paiment]
         }).save()
         else{
-          const montantBig = new BigNumber((paiment.montant*100/(100+5)).toString());
+          const montantBig = new BigNumber((paiment.montant*100/(100+2.2+recepteur[0].marchandData.percent)).toFixed(2).toString());
           const totalBig = new BigNumber(group[0].total.toString());
           
           // Add the BigNumber values

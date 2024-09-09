@@ -35,7 +35,7 @@ async function generateFacture(body,id){
           paym.emeteur?.nom,
           paym.emeteur?.prenom,
           '0'+paym.emeteur?.telephone,
-          (paym.montant*100/(100+5)).toFixed(2),
+          (paym.montant*100/(100+2.2+body.destinataire.marchandData.percent)).toFixed(2),
           `${/*formattedDate*/ ""}${formattedTime}`
         ];
       }),
@@ -94,14 +94,14 @@ async function generateFacture(body,id){
           
           doc.setFont("courier")
           // console.log(doc.getFontList())
-          doc.rect(doc.internal.pageSize.width-97, doc.internal.pageSize.height - 50,80,20)
+          doc.rect(doc.internal.pageSize.width-97, doc.internal.pageSize.height - 50,80,13)
           
-          doc.text('Somme: ', doc.internal.pageSize.width-95, doc.internal.pageSize.height - 45);
-          doc.text(`TVA  (20%): `, doc.internal.pageSize.width-95, doc.internal.pageSize.height - 40);
-          doc.text('Total: ', doc.internal.pageSize.width-95, doc.internal.pageSize.height - 35);
-          doc.text(Number(somme).toFixed(2)+" DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 45,{ align: 'right' });
-          doc.text('-'+Number(commission).toFixed(2)+" DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 40,{ align: 'right' });
-          doc.text(Number(total).toFixed(2)+" DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 35,{ align: 'right' });
+          // doc.text('Somme: ', doc.internal.pageSize.width-95, doc.internal.pageSize.height - 45);
+          doc.text(`TVA  (20%): `, doc.internal.pageSize.width-95, doc.internal.pageSize.height - 45);
+          doc.text('Total: ', doc.internal.pageSize.width-95, doc.internal.pageSize.height - 40);
+          // doc.text(Number(somme).toFixed(2)+" DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 45,{ align: 'right' });
+          doc.text(Number(commission).toFixed(2)+" DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 45,{ align: 'right' });
+          doc.text(Number(total).toFixed(2)+" DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 40,{ align: 'right' });
           
             // doc.text("100 DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 45,{ align: 'right' });
             // doc.text("20 DH", doc.internal.pageSize.width-20, doc.internal.pageSize.height - 40,{ align: 'right' });

@@ -12,6 +12,7 @@ const marchandValidator = [
   body("user").trim().notEmpty(),
   body("nomMarchand").trim().notEmpty(),
   body("RC").trim().notEmpty(),
+  body("bank").trim().notEmpty(),
   body("rib").trim().notEmpty(),
   body("IF").trim().notEmpty(),
   (req, res, next) => {
@@ -36,6 +37,7 @@ router.get('/clients/search', authenticateDashboardToken, async (req, res) => {
               { "marchandData.nomMarchant": { $exists: false} },
               { "marchandData.percent": { $exists: false} },
               { "marchandData.RC": { $exists: false} },
+              { "marchandData.bank": { $exists: false} },
               { "marchandData.IF": { $exists: false} },
               { "marchandData.rib": { $exists: false} }
             ],
@@ -60,18 +62,18 @@ router.get('/clients/search', authenticateDashboardToken, async (req, res) => {
       console.error(error);
       res.status(500).json({ error: 'An error occurred while fetching clients' });
     }
-  });
+});
 
 router.post("/addmarchand",authenticateDashboardToken,marchandValidator, async (req,res)=>{
     try{
-        const {user,logo,nomMarchand,RC,rib,IF,percent} = req.body
+        const {user,logo,nomMarchand,RC,bank,rib,IF,percent} = req.body
         let u = await Utilisateur.findById(user) 
         if(u==null){
             res.send({ message: "User Id doesn't exist", status: "error" })
             return
         }
         u.photo=logo
-        u.marchandData = {nomMarchand,RC,rib,IF,percent}
+        u.marchandData = {nomMarchand,RC,rib,bank,IF,percent}
         await u.save()
         res.send({ message: "Merchant assigned successfully",marchand:u.marchandData, status: "success" })
     }catch(error) {
@@ -86,6 +88,7 @@ router.get("/list",authenticateDashboardToken,async (req,res)=>{
           { "marchandData.nomMarchant": { $exists: true, $ne: "" } },
           { "marchandData.percent": { $exists: true, $ne: "" } },
           { "marchandData.RC": { $exists: true, $ne: "" } },
+          { "marchandData.bank": { $exists: true, $ne: "" } },
           { "marchandData.IF": { $exists: true, $ne: "" } },
           { "marchandData.rib": { $exists: true, $ne: "" } }
         ]})
@@ -96,18 +99,18 @@ router.get("/list",authenticateDashboardToken,async (req,res)=>{
     }
 })
 
-
 router.put("/update/:id",authenticateDashboardToken,async (req,res)=>{
     try{
         const {id} = req.params
-        const {logo,nomMarchand,RC,rib,IF,percent} = req.body
-        const march = await Utilisateur.findByIdAndUpdate(id,{photo:logo,marchandData:{nomMarchand,RC,IF,percent,rib}},{new:true})
+        const {logo,nomMarchand,bank,RC,rib,IF,percent} = req.body
+        const march = await Utilisateur.findByIdAndUpdate(id,{photo:logo,marchandData:{nomMarchand,RC,bank,IF,percent,rib}},{new:true})
         res.send(march)
     }catch(error){
         console.error(error.message)
         res.send(error.message)
     }
 })
+
 router.delete("/delete/:id",authenticateDashboardToken,async (req,res)=>{
     try{
         const {id} = req.params

@@ -43,7 +43,7 @@ router.post("/login", loginValidator, async (req, res) => {
     if (!bcrypt.compareSync(password, user.password)) {
       return res.status(400).send({ message: "password incorrect", status: "error" })
     }
-    if (!user.marchandData.nomMarchand && !user.marchandData.IF && !user.marchandData.RC && !user.marchandData.percent && !user.marchandData.rib)
+    if (!user.marchandData.nomMarchand && !user.marchandData.IF && !user.marchandData.RC && !user.marchandData.percent && !user.marchandData.rib && !user.marchandData.rib && !user.marchandData.bank)
       user.marchandData = undefined
 
     if (user.isBlocked) {

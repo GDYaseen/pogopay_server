@@ -18,9 +18,10 @@ const cartebancaireSchema = new Schema({
 const marchantSchema = new Schema({
   rib:{ type:String},
   nomMarchand: { type: String },
-  RC: { type: String ,default:"RC-4245"},
-  IF: { type: String,default:"IF-123"},
-  percent:{ type:Number,min:0,max:100,default:2}
+  RC: { type: String},
+  IF: { type: String},
+  bank:{ type: String},
+  percent:{ type:Number,min:0,max:100}
 })
 
 const utilisateurSchema = new Schema({
@@ -41,16 +42,6 @@ utilisateurSchema.pre('save', function (next) {
   // If no card is marked as default and at least one card exists, set the first card to default
   if (utilisateur.cards.length > 0 && !utilisateur.cards.some(card => card.isdefault)) {
     utilisateur.cards[0].isdefault = true;
-  }
-
-  // temporary
-  // Generate and set the rib value for marchantData
-  if (utilisateur.isMarchand && utilisateur.marchandData) {
-    // Ensure _id is available before setting rib
-    if (utilisateur._id) {
-      utilisateur.marchandData.rib = `${utilisateur._id}-${utilisateur.nom}`;
-      utilisateur.marchandData.nomMarchand = `Marchand-${utilisateur.nom}`;
-    }
   }
   
   next();
