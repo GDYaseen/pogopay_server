@@ -62,27 +62,42 @@ router.get("/recuVir/:id",async (req,res)=>{
 router.get("/historique/:etat", authenticateDashboardToken,async (req, res) => {
     try {
       const { etat } = req.params;
-      let statusFilter
+      const { date } = req.query;
+      
+      const filter = {};
       switch (etat) {
         case "encours":
-            statusFilter = "en cours"
+            filter.status = "en cours"
           break;
         case "echouee":
-            statusFilter = "échouer"
+            filter.status = "échouer"
           break;
         case "reussie":
-            statusFilter = "reussie"
+            filter.status = "reussie"
           break;
         default:
           historique = [];
           break;
       }
-      let historique = await GroupedPaiment.find({status:statusFilter})
+
+      if (date) {
+        const startDate = new Date(date);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 1); // End date is one day after the start date
+  
+        filter.createdAt = {
+          $gte: startDate,
+          $lt: endDate, // Ensure it's less than the next day to include only the selected day
+        };
+      }
+
+      let historique = await GroupedPaiment.find(filter)
         .populate({
           path: "destinataire",
           select: ["nom", "prenom", "telephone", "marchandData"],
         })
         .exec();
+        // console.log(historique)
       res.send(historique);
     } catch (error) {
       console.error(error.message);
